@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 100" role="img" aria-label="Logo de l'école School Vie">
+  <defs>
+    <linearGradient id="bougie" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd84d"/>
+      <stop offset="0.55" stop-color="#ffc61a"/>
+      <stop offset="1" stop-color="#f0ae0b"/>
+    </linearGradient>
+    <linearGradient id="flammeExt" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#d92c1d"/>
+      <stop offset="1" stop-color="#ef5a1e"/>
+    </linearGradient>
+    <linearGradient id="flammeMil" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#f47b20"/>
+      <stop offset="1" stop-color="#f9a03f"/>
+    </linearGradient>
+    <linearGradient id="flammeInt" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffd21e"/>
+      <stop offset="1" stop-color="#ffe95c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cœur (contour rouge) -->
+  <path d="M65 93 C33 66 15 46 15 27 C15 12 38 8 51 17 C57.5 21.5 62 25 65 30 C68 25 72.5 21.5 79 17 C92 8 115 12 115 27 C115 46 97 66 65 93 Z"
+        fill="none" stroke="#e03224" stroke-width="2.6" stroke-linejoin="round"/>
+
+  <!-- V (bleu marine) -->
+  <path d="M11 25 L34.5 78.5 L58 25" fill="none" stroke="#1f2766" stroke-width="9"
+        stroke-linecap="butt" stroke-linejoin="miter"/>
+
+  <!-- I : la bougie (jaune) -->
+  <rect x="58.5" y="28" width="13" height="44" fill="url(#bougie)" stroke="#e0a107" stroke-width="1"/>
+
+  <!-- Flamme de la bougie -->
+  <path d="M65 2.5 C59 9.5 53.5 13.5 53.5 19.5 a11.5 11.5 0 0 0 23 0 C76.5 13.5 71 9.5 65 2.5 Z" fill="url(#flammeExt)"/>
+  <path d="M65 7.5 C61 12.8 57.5 15.4 57.5 19.6 a7.5 7.5 0 0 0 15 0 C72.5 15.4 69 12.8 65 7.5 Z" fill="url(#flammeMil)"/>
+  <path d="M65 12.5 C62.5 15.7 60.7 17.6 60.7 19.8 a4.3 4.3 0 0 0 8.6 0 C69.3 17.6 67.5 15.7 65 12.5 Z" fill="url(#flammeInt)"/>
+
+  <!-- E (vert) -->
+  <g fill="#1a9e4a">
+    <rect x="79" y="25" width="10" height="49"/>
+    <rect x="79" y="25" width="46" height="9.5"/>
+    <rect x="79" y="44.75" width="39" height="9.5"/>
+    <rect x="79" y="64.5" width="46" height="9.5"/>
+  </g>
+</svg>

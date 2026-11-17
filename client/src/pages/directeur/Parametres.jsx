@@ -1,0 +1,212 @@
+// Paramètres de l'établissement — réservés au Directeur (logo + identité + cachet).
+import { useEffect, useRef, useState } from 'react';
+import api, { messageErreur } from '../../api/axios';
+import { useToast } from '../../hooks/useToast';
+import Card from '../../components/Card';
+import Button from '../../components/Button';
+import Input from '../../components/Input';
+
+const URL_API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const ORIGINE = URL_API.replace(/\/api\/?$/, '');
+
+export default function ParametresPage() {
+  const toast = useToast();
+  const inputLogoRef = useRef(null);
+  const [form, setForm] = useState(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const [apercuLogo, setApercuLogo] = useState(null);
+  const [envoiLogo, setEnvoiLogo] = useState(false);
+  const inputCachetRef = useRef(null);
+  const [apercuCachet, setApercuCachet] = useState(null);
+  const [envoiCachet, setEnvoiCachet] = useState(false);
+
+  const charger = () => api.get('/parametres').then(({ data }) => setForm({
+    nom: data.nom || '',
+    adresse: data.adresse || '',
+    bp: data.bp || '',
+    ville: data.ville || '',
+    pays: data.pays || '',
+    telephone: data.telephone || '',
+    email: data.email || '',
+    directeur_nom: data.directeur_nom || '',
+    cachet_path: data.cachet_path || null,
+    devise: data.devise || 'FCFA',
+    note_max: data.note_max ?? 20,
+    duree_heure_minutes: data.duree_heure_minutes ?? 55,
+    logo_path: data.logo_path || null,
+  })).catch((err) => setErreur(messageErreur(err, 'Chargement impossible.')));
+
+  useEffect(() => { charger(); }, []);
+
+  const enregistrer = async (e) => {
+    e.preventDefault();
+    setErreur('');
+    setEnvoi(true);
+    try {
+      await api.put('/directeur/parametres', {
+        nom: form.nom.trim(),
+        adresse: form.adresse.trim() || null,
+        bp: form.bp.trim() || null,
+        ville: form.ville.trim() || null,
+        pays: form.pays.trim() || null,
+        telephone: form.telephone.trim() || null,
+        email: form.email.trim() || null,
+        directeur_nom: form.directeur_nom.trim() || null,
+        devise: form.devise.trim() || 'FCFA',
+        note_max: Number(form.note_max),
+        duree_heure_minutes: Number(form.duree_heure_minutes),
+      });
+      toast.succes('Paramètres enregistrés.');
+    } catch (err) {
+      setErreur(messageErreur(err, 'Enregistrement impossible.'));
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
+  const choisirLogo = async (e) => {
+    const fichier = e.target.files?.[0];
+    if (!fichier) return;
+    setApercuLogo(URL.createObjectURL(fichier));
+    const donnees = new FormData();
+    donnees.append('logo', fichier);
+    setEnvoiLogo(true);
+    setErreur('');
+    try {
+      const { data } = await api.post('/directeur/parametres/logo', donnees, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setForm((f) => ({ ...f, logo_path: data.logo_path }));
+      toast.succes('Logo mis à jour.');
+    } catch (err) {
+      setErreur(messageErreur(err, 'Envoi du logo impossible.'));
+    } finally {
+      setEnvoiLogo(false);
+      e.target.value = '';
+    }
+  };
+
+  // Signature du directeur / cachet : même logique que le logo
+  const choisirImage = ({ champ, urlApi, champFichier, setApercu, setEnvoi, messageSucces, messageErreur: erreurMsg }) => async (e) => {
+    const fichier = e.target.files?.[0];
+    if (!fichier) return;
+    setApercu(URL.createObjectURL(fichier));
+    const donnees = new FormData();
+    donnees.append(champFichier, fichier);
+    setEnvoi(true);
+    setErreur('');
+    try {
+      const { data } = await api.post(urlApi, donnees, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setForm((f) => ({ ...f, [champ]: data[champ] }));
+      toast.succes(messageSucces);
+    } catch (err) {
+      setErreur(messageErreur(err, erreurMsg));
+    } finally {
+      setEnvoi(false);
+      e.target.value = '';
+    }
+  };
+  const supprimerImage = ({ champ, urlApi, setApercu, messageSucces }) => async () => {
+    setErreur('');
+    try {
+      await api.delete(urlApi);
+      setForm((f) => ({ ...f, [champ]: null }));
+      setApercu(null);
+      toast.succes(messageSucces);
+    } catch (err) {
+      setErreur(messageErreur(err, 'Suppression impossible.'));
+    }
+  };
+  const choisirCachet = choisirImage({ champ: 'cachet_path', urlApi: '/directeur/parametres/cachet', champFichier: 'cachet', setApercu: setApercuCachet, setEnvoi: setEnvoiCachet, messageSucces: 'Cachet mis à jour.', messageErreur: 'Envoi du cachet impossible.' });
+  const retirerCachet = supprimerImage({ champ: 'cachet_path', urlApi: '/directeur/parametres/cachet', setApercu: setApercuCachet, messageSucces: 'Cachet retiré.' });
+
+  if (!form) {
+    return (
+      <>
+        <h1 className="page-titre">Paramètres de l’établissement</h1>
+        {erreur ? <div className="auth-erreur" role="alert">{erreur}</div> : <div className="spinner" />}
+      </>
+    );
+  }
+
+  const logoUrl = form.logo_path ? (form.logo_path.startsWith('http') ? form.logo_path : `${ORIGINE}${form.logo_path}`) : null;
+  const cachetUrl = form.cachet_path ? (form.cachet_path.startsWith('http') ? form.cachet_path : `${ORIGINE}${form.cachet_path}`) : null;
+
+  return (
+    <>
+      <h1 className="page-titre">Paramètres de l’établissement</h1>
+      {erreur && <div className="auth-erreur mb-4" role="alert">{erreur}</div>}
+
+      <div className="grid-2" style={{ alignItems: 'start' }}>
+        {/* Identité */}
+        <Card titre="Identité de l’école">
+          <form onSubmit={enregistrer}>
+            <Input label="Nom de l’école" name="nom" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} requis />
+            <Input label="Adresse" name="adresse" value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })} placeholder="ex. Quartier…" />
+            <div className="grid-2 mt-4">
+              <Input label="Boîte postale (BP)" name="bp" value={form.bp} onChange={(e) => setForm({ ...form, bp: e.target.value })} placeholder="ex. 1207" aide="Affichée sur les cartes scolaires" />
+              <Input label="Téléphone" name="telephone" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} />
+            </div>
+            <div className="grid-2 mt-4">
+              <Input label="Ville" name="ville" value={form.ville} onChange={(e) => setForm({ ...form, ville: e.target.value })} placeholder="ex. Lomé" />
+              <Input label="Pays" name="pays" value={form.pays} onChange={(e) => setForm({ ...form, pays: e.target.value })} placeholder="ex. TOGO" />
+            </div>
+            <div className="grid-2 mt-4">
+              <Input label="E-mail" name="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Input label="Devise" name="devise" value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} aide="ex. FCFA" />
+            </div>
+            <div className="grid-2 mt-4">
+              <Input label="Note maximale" name="note_max" type="number" min="1" step="0.5" value={form.note_max} onChange={(e) => setForm({ ...form, note_max: e.target.value })} />
+              <Input label="Durée d’une heure de cours (minutes)" name="duree_heure_minutes" type="number" min="1" value={form.duree_heure_minutes} onChange={(e) => setForm({ ...form, duree_heure_minutes: e.target.value })} aide="55 minutes par défaut" />
+            </div>
+            <div className="mt-4">
+              <Input label="Nom du directeur" name="directeur_nom" value={form.directeur_nom} onChange={(e) => setForm({ ...form, directeur_nom: e.target.value })} placeholder="ex. Kossivi AGBEKODO" aide="Utilisé au dos des cartes scolaires (« Je soussigné … »)" />
+            </div>
+            <Button type="submit" variant="primary" className="mt-6" disabled={envoi}>{envoi ? 'Enregistrement…' : 'Enregistrer'}</Button>
+          </form>
+        </Card>
+
+        {/* Colonne droite : logo puis cachet dessous (design propre) */}
+        <div className="flex" style={{ flexDirection: 'column', gap: 'var(--espace-5)' }}>
+        {/* Logo */}
+        <Card titre="Logo de l’école">
+          <p className="text-doux">Utilisé sur la sidebar, les pages d’authentification, les cartes scolaires et les bulletins. PNG, JPEG ou WebP — 2 Mo maximum.</p>
+          <div style={{ textAlign: 'center', padding: 'var(--espace-5) 0' }}>
+            <div style={{ width: 160, height: 120, margin: '0 auto', border: '1px dashed var(--bordure)', borderRadius: 'var(--rayon-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gris-50)', overflow: 'hidden' }}>
+              {(apercuLogo || logoUrl) ? (
+                <img src={apercuLogo || logoUrl} alt="Logo de l’école" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              ) : (
+                <span className="text-doux">Aucun logo</span>
+              )}
+            </div>
+            <input ref={inputLogoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={choisirLogo} />
+            <Button variant="secondary" className="mt-4" onClick={() => inputLogoRef.current?.click()} disabled={envoiLogo}>
+              {envoiLogo ? 'Envoi…' : 'Choisir un logo'}
+            </Button>
+          </div>
+        </Card>
+
+        {/* Cachet de l'établissement */}
+        <Card titre="Cachet de l’établissement">
+          <p className="text-doux">Apposé au dos des cartes scolaires, dans le cercle pointillé à gauche. Fond transparent recommandé (PNG). PNG, JPEG ou WebP — 2 Mo max.</p>
+          <div style={{ textAlign: 'center', padding: 'var(--espace-5) 0' }}>
+            <div style={{ width: 130, height: 130, margin: '0 auto', border: '1px dashed var(--bordure)', borderRadius: 'var(--rayon-plein)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gris-50)', overflow: 'hidden' }}>
+              {(apercuCachet || cachetUrl) ? (
+                <img src={apercuCachet || cachetUrl} alt="Cachet de l’établissement" style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
+              ) : (
+                <span className="text-doux">Aucun cachet</span>
+              )}
+            </div>
+            <input ref={inputCachetRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={choisirCachet} />
+            <div className="flex gap-2 mt-4" style={{ justifyContent: 'center' }}>
+              <Button variant="secondary" onClick={() => inputCachetRef.current?.click()} disabled={envoiCachet}>
+                {envoiCachet ? 'Envoi…' : 'Choisir un cachet'}
+              </Button>
+              {cachetUrl && <Button variant="danger" onClick={retirerCachet}>Retirer</Button>}
+            </div>
+          </div>
+        </Card>
+        </div>
+      </div>
+    </>
+  );
+}

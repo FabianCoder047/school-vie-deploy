@@ -1,0 +1,111 @@
+/* =====================================================================
+   School Vie — Design System : variables (charte 4 couleurs + nuances)
+   Bleu = principal · Jaune = accent/avertissement
+   Rouge = danger/erreur · Vert = succès
+   ===================================================================== */
+:root {
+  /* Bleu */
+  --bleu-50: #eff6ff;
+  --bleu-100: #dbeafe;
+  --bleu-200: #bfdbfe;
+  --bleu-300: #93c5fd;
+  --bleu-400: #60a5fa;
+  --bleu-500: #3b82f6;
+  --bleu-600: #2563eb;
+  --bleu-700: #1d4ed8;
+  --bleu-800: #1e40af;
+  --bleu-900: #1e3a8a;
+
+  /* Jaune */
+  --jaune-50: #fefce8;
+  --jaune-100: #fef9c3;
+  --jaune-200: #fef08a;
+  --jaune-300: #fde047;
+  --jaune-400: #facc15;
+  --jaune-500: #eab308;
+  --jaune-600: #ca8a04;
+  --jaune-700: #a16207;
+  --jaune-800: #854d0e;
+  --jaune-900: #713f12;
+
+  /* Rouge */
+  --rouge-50: #fef2f2;
+  --rouge-100: #fee2e2;
+  --rouge-200: #fecaca;
+  --rouge-300: #fca5a5;
+  --rouge-400: #f87171;
+  --rouge-500: #ef4444;
+  --rouge-600: #dc2626;
+  --rouge-700: #b91c1c;
+  --rouge-800: #991b1b;
+  --rouge-900: #7f1d1d;
+
+  /* Vert */
+  --vert-50: #f0fdf4;
+  --vert-100: #dcfce7;
+  --vert-200: #bbf7d0;
+  --vert-300: #86efac;
+  --vert-400: #4ade80;
+  --vert-500: #22c55e;
+  --vert-600: #16a34a;
+  --vert-700: #15803d;
+  --vert-800: #166534;
+  --vert-900: #14532d;
+
+  /* Neutres (ardoise) */
+  --gris-50: #f8fafc;
+  --gris-100: #f1f5f9;
+  --gris-200: #e2e8f0;
+  --gris-300: #cbd5e1;
+  --gris-400: #94a3b8;
+  --gris-500: #64748b;
+  --gris-600: #475569;
+  --gris-700: #334155;
+  --gris-800: #1e293b;
+  --gris-900: #0f172a;
+
+  /* Rôles sémantiques */
+  --couleur-primaire: var(--bleu-700);
+  --couleur-primaire-foncee: var(--bleu-800);
+  --couleur-primaire-claire: var(--bleu-100);
+  --couleur-accent: var(--jaune-500);
+  --couleur-danger: var(--rouge-600);
+  --couleur-danger-claire: var(--rouge-100);
+  --couleur-succes: var(--vert-600);
+  --couleur-succes-claire: var(--vert-100);
+  --couleur-avertissement: var(--jaune-600);
+  --couleur-avertissement-claire: var(--jaune-100);
+
+  --fond-page: var(--gris-100);
+  --fond-carte: #ffffff;
+  --texte-principal: var(--gris-800);
+  --texte-doux: var(--gris-500);
+  --bordure: var(--gris-200);
+
+  /* Espacements */
+  --espace-1: 4px;
+  --espace-2: 8px;
+  --espace-3: 12px;
+  --espace-4: 16px;
+  --espace-5: 24px;
+  --espace-6: 32px;
+  --espace-7: 48px;
+
+  /* Rayons */
+  --rayon-sm: 6px;
+  --rayon-md: 10px;
+  --rayon-lg: 14px;
+  --rayon-plein: 9999px;
+
+  /* Ombres */
+  --ombre-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --ombre-md: 0 4px 12px rgba(15, 23, 42, 0.1);
+  --ombre-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
+
+  /* Dimensions du squelette */
+  --largeur-sidebar: 264px;
+  --hauteur-topbar: 64px;
+
+  --police: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --transition: 0.18s ease;
+}
