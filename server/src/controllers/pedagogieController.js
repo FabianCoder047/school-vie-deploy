@@ -1,6 +1,7 @@
 // Contrôleur HTTP — périodes d'évaluation et emploi du temps (Directeur).
 const evaluationPeriodService = require('../services/evaluationPeriodService');
 const timetableService = require('../services/timetableService');
+const edtPdf = require('../services/emploiDuTempsPdfService');
 
 /* ===== PÉRIODES ===== */
 async function listerPeriodes(req, res, next) {
@@ -23,6 +24,18 @@ async function listerCreneaux(req, res, next) {
 async function affectationsPourAlias(req, res, next) {
   try { res.json(await timetableService.affectationsPourAlias(req.query)); } catch (e) { next(e); }
 }
+async function configurationEdt(req, res, next) {
+  try { res.json(await timetableService.configurationHoraires()); } catch (e) { next(e); }
+}
+async function edtPdfAlias(req, res, next) {
+  try { await edtPdf.genererPdf(res, { classAliasId: req.query.class_alias_id }); } catch (e) { next(e); }
+}
+async function edtPdfClasse(req, res, next) {
+  try { await edtPdf.genererPdf(res, { classeId: req.query.classe_id }); } catch (e) { next(e); }
+}
+async function edtPdfCycle(req, res, next) {
+  try { await edtPdf.genererPdf(res, { cycleId: req.query.cycle_id }); } catch (e) { next(e); }
+}
 async function creerCreneau(req, res, next) {
   try { res.status(201).json(await timetableService.creerCreneau(req.body, req.user.id, req.ip)); } catch (e) { next(e); }
 }
@@ -35,5 +48,7 @@ async function supprimerCreneau(req, res, next) {
 
 module.exports = {
   listerPeriodes, creerPeriode, modifierPeriode, supprimerPeriode,
-  listerCreneaux, affectationsPourAlias, creerCreneau, modifierCreneau, supprimerCreneau,
+  listerCreneaux, affectationsPourAlias, configurationEdt,
+  edtPdfAlias, edtPdfClasse, edtPdfCycle,
+  creerCreneau, modifierCreneau, supprimerCreneau,
 };

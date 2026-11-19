@@ -5,6 +5,7 @@ const fs = require('fs');
 const { ApiError } = require('../utils/ApiError');
 const settingsRepo = require('../repositories/settingsRepository');
 const { log: audit } = require('../repositories/auditRepository');
+const horaires = require('../config/horairesScolaires');
 
 const DOSSIER_UPLOADS = path.join(__dirname, '..', '..', 'uploads');
 const URL_PUBLIQUE = '/uploads';
@@ -25,6 +26,28 @@ async function modifierParametres(data, actorId, ip) {
   if (!(Number(data.duree_heure_minutes) >= 1)) {
     throw ApiError.badRequest('La durée d’une heure de cours doit être d’au moins 1 minute.', 'DUREE_INVALIDE');
   }
+
+  // Cohérence de la journée type (les heures viennent du schéma Zod, mais on
+  // revérifie ici pour les appels directs au service).
+  const champsHoraires = ['debut_journee', 'pause_matin_debut', 'pause_matin_fin', 'fin_matin', 'debut_apres_midi', 'fin_apres_midi', 'fin_primaire'];
+  const h = {};
+  for (const champ of champsHoraires) {
+    const valeur = String(data[champ] ?? '').slice(0, 5);
+    if (!/^\d{2}:\d{2}$/.test(valeur)) {
+      throw ApiError.badRequest(`Heure invalide pour ${champ} (format HH:MM attendu).`, 'HORAIRE_INVALIDE');
+    }
+    h[champ] = valeur;
+  }
+  const m = horaires.enMinutes;
+  if (!(m(h.debut_journee) < m(h.pause_matin_debut) && m(h.pause_matin_debut) < m(h.pause_matin_fin)
+    && m(h.pause_matin_fin) < m(h.fin_matin) && m(h.fin_matin) < m(h.debut_apres_midi)
+    && m(h.debut_apres_midi) < m(h.fin_apres_midi))) {
+    throw ApiError.badRequest('Les horaires doivent être ordonnés : début < pause < fin de matinée < retour < fin de l’après-midi.', 'HORAIRES_DESORDONNES');
+  }
+  if (!(m(h.pause_matin_fin) < m(h.fin_primaire) && m(h.fin_primaire) <= m(h.fin_matin))) {
+    throw ApiError.badRequest('Au primaire, la fin doit être comprise entre la fin de la pause et la fin de matinée.', 'FIN_PRIMAIRE_INVALIDE');
+  }
+
   const avant = await settingsRepo.get();
   const settings = await settingsRepo.update({
     nom: data.nom.trim(),
@@ -38,6 +61,13 @@ async function modifierParametres(data, actorId, ip) {
     devise: (data.devise || 'FCFA').trim(),
     note_max: Number(data.note_max),
     duree_heure_minutes: Number(data.duree_heure_minutes),
+    debut_journee: h.debut_journee,
+    pause_matin_debut: h.pause_matin_debut,
+    pause_matin_fin: h.pause_matin_fin,
+    fin_matin: h.fin_matin,
+    debut_apres_midi: h.debut_apres_midi,
+    fin_apres_midi: h.fin_apres_midi,
+    fin_primaire: h.fin_primaire,
   });
   await audit({ userId: actorId, action: 'UPDATE', entity: 'school_settings', entityId: 1, oldValues: avant, newValues: data, ipAddress: ip });
   return settings;

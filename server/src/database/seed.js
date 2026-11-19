@@ -37,8 +37,10 @@ const mysql = require('mysql2/promise');
 
     // --- School settings (ligne unique id = 1) ---
     await connection.query(
-      `INSERT INTO school_settings (id, nom, devise, note_max, duree_heure_minutes)
-       VALUES (1, ?, 'FCFA', 20.00, 55)
+      `INSERT INTO school_settings
+         (id, nom, devise, note_max, duree_heure_minutes, debut_journee, pause_matin_debut, pause_matin_fin,
+          fin_matin, debut_apres_midi, fin_apres_midi, fin_primaire)
+       VALUES (1, ?, 'FCFA', 20.00, 55, '07:00', '09:45', '10:10', '12:00', '14:30', '17:30', '11:30')
        ON DUPLICATE KEY UPDATE nom = VALUES(nom)`,
       [process.env.SCHOOL_NAME || 'School Vie']
     );

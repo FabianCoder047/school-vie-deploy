@@ -65,7 +65,15 @@ async function findOuCreerDefaut(classId, nomClasse) {
 }
 
 async function findById(id) {
-  const [[row]] = await pool.query('SELECT id, class_id, nom, capacite FROM class_aliases WHERE id = ?', [id]);
+  const [[row]] = await pool.query(
+    `SELECT a.id, a.class_id, a.nom, a.capacite,
+            cl.nom AS classe_nom, cy.id AS cycle_id, cy.nom AS cycle_nom
+       FROM class_aliases a
+       JOIN classes cl ON cl.id = a.class_id
+       JOIN cycles cy ON cy.id = cl.cycle_id
+      WHERE a.id = ?`,
+    [id]
+  );
   return row || null;
 }
 

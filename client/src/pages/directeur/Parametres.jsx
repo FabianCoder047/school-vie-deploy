@@ -34,6 +34,13 @@ export default function ParametresPage() {
     devise: data.devise || 'FCFA',
     note_max: data.note_max ?? 20,
     duree_heure_minutes: data.duree_heure_minutes ?? 55,
+    debut_journee: String(data.debut_journee || '07:00').slice(0, 5),
+    pause_matin_debut: String(data.pause_matin_debut || '09:45').slice(0, 5),
+    pause_matin_fin: String(data.pause_matin_fin || '10:10').slice(0, 5),
+    fin_matin: String(data.fin_matin || '12:00').slice(0, 5),
+    debut_apres_midi: String(data.debut_apres_midi || '14:30').slice(0, 5),
+    fin_apres_midi: String(data.fin_apres_midi || '17:30').slice(0, 5),
+    fin_primaire: String(data.fin_primaire || '11:30').slice(0, 5),
     logo_path: data.logo_path || null,
   })).catch((err) => setErreur(messageErreur(err, 'Chargement impossible.')));
 
@@ -56,6 +63,13 @@ export default function ParametresPage() {
         devise: form.devise.trim() || 'FCFA',
         note_max: Number(form.note_max),
         duree_heure_minutes: Number(form.duree_heure_minutes),
+        debut_journee: form.debut_journee,
+        pause_matin_debut: form.pause_matin_debut,
+        pause_matin_fin: form.pause_matin_fin,
+        fin_matin: form.fin_matin,
+        debut_apres_midi: form.debut_apres_midi,
+        fin_apres_midi: form.fin_apres_midi,
+        fin_primaire: form.fin_primaire,
       });
       toast.succes('Paramètres enregistrés.');
     } catch (err) {
@@ -137,9 +151,10 @@ export default function ParametresPage() {
       {erreur && <div className="auth-erreur mb-4" role="alert">{erreur}</div>}
 
       <div className="grid-2" style={{ alignItems: 'start' }}>
+        <div className="flex" style={{ flexDirection: 'column', gap: 'var(--espace-5)' }}>
         {/* Identité */}
         <Card titre="Identité de l’école">
-          <form onSubmit={enregistrer}>
+          <form id="form-parametres" onSubmit={enregistrer}>
             <Input label="Nom de l’école" name="nom" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} requis />
             <Input label="Adresse" name="adresse" value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })} placeholder="ex. Quartier…" />
             <div className="grid-2 mt-4">
@@ -164,6 +179,29 @@ export default function ParametresPage() {
             <Button type="submit" variant="primary" className="mt-6" disabled={envoi}>{envoi ? 'Enregistrement…' : 'Enregistrer'}</Button>
           </form>
         </Card>
+
+        {/* Horaires de l'emploi du temps */}
+        <Card titre="Horaires de l’emploi du temps">
+          <p className="text-doux">Utilisés pour créer et valider les créneaux : un cours d’une heure dure {form.duree_heure_minutes} minutes, avec une pause le matin et un retour l’après-midi.</p>
+          <div className="grid-2 mt-4">
+            <Input label="Début des cours" name="debut_journee" type="time" form="form-parametres" value={form.debut_journee} onChange={(e) => setForm({ ...form, debut_journee: e.target.value })} />
+            <Input label="Durée d’une heure (min)" name="duree_heure_minutes2" type="number" min="1" form="form-parametres" value={form.duree_heure_minutes} onChange={(e) => setForm({ ...form, duree_heure_minutes: e.target.value })} />
+          </div>
+          <div className="grid-2 mt-4">
+            <Input label="Début de la pause" name="pause_matin_debut" type="time" form="form-parametres" value={form.pause_matin_debut} onChange={(e) => setForm({ ...form, pause_matin_debut: e.target.value })} />
+            <Input label="Fin de la pause" name="pause_matin_fin" type="time" form="form-parametres" value={form.pause_matin_fin} onChange={(e) => setForm({ ...form, pause_matin_fin: e.target.value })} />
+          </div>
+          <div className="grid-2 mt-4">
+            <Input label="Fin de la matinée" name="fin_matin" type="time" form="form-parametres" value={form.fin_matin} onChange={(e) => setForm({ ...form, fin_matin: e.target.value })} />
+            <Input label="Fin au primaire" name="fin_primaire" type="time" form="form-parametres" value={form.fin_primaire} onChange={(e) => setForm({ ...form, fin_primaire: e.target.value })} aide="Durée libre, pas de créneau l’après-midi" />
+          </div>
+          <div className="grid-2 mt-4">
+            <Input label="Retour des collégiens / lycéens" name="debut_apres_midi" type="time" form="form-parametres" value={form.debut_apres_midi} onChange={(e) => setForm({ ...form, debut_apres_midi: e.target.value })} />
+            <Input label="Fin de l’après-midi" name="fin_apres_midi" type="time" form="form-parametres" value={form.fin_apres_midi} onChange={(e) => setForm({ ...form, fin_apres_midi: e.target.value })} />
+          </div>
+          <Button type="submit" form="form-parametres" variant="secondary" className="mt-4" disabled={envoi}>{envoi ? 'Enregistrement…' : 'Enregistrer les horaires'}</Button>
+        </Card>
+        </div>
 
         {/* Colonne droite : logo puis cachet dessous (design propre) */}
         <div className="flex" style={{ flexDirection: 'column', gap: 'var(--espace-5)' }}>

@@ -3,7 +3,7 @@ const pool = require('../config/db');
 
 const SELECT_CRENEAU = `
   SELECT ts.id, ts.academic_year_id, ts.class_alias_id, ts.teacher_assignment_id,
-         ts.jour_semaine, ts.heure_debut, ts.heure_fin, ts.nb_heures, ts.salle, ts.created_at,
+         ts.jour_semaine, ts.heure_debut, ts.heure_fin, ts.nb_heures, ts.duree_libre, ts.salle, ts.created_at,
          u.id AS teacher_id, u.nom AS prof_nom, u.prenom AS prof_prenom,
          s.nom AS matiere_nom, cl.nom AS classe_nom, a.nom AS alias_nom, cy.nom AS cycle_nom
     FROM timetable_slots ts
@@ -37,19 +37,22 @@ async function findById(id) {
   return row || null;
 }
 
-async function create({ academic_year_id, class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, salle }) {
+async function create({ academic_year_id, class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, duree_libre, salle }) {
   const [result] = await pool.query(
-    `INSERT INTO timetable_slots (academic_year_id, class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, salle)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [academic_year_id, class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, salle || null]
+    `INSERT INTO timetable_slots (academic_year_id, class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, duree_libre, salle)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [academic_year_id, class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, duree_libre ? 1 : 0, salle || null]
   );
   return findById(result.insertId);
 }
 
-async function update(id, { class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, salle }) {
+async function update(id, { class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, duree_libre, salle }) {
   await pool.query(
-    `UPDATE timetable_slots SET class_alias_id = ?, teacher_assignment_id = ?, jour_semaine = ?, heure_debut = ?, heure_fin = ?, nb_heures = ?, salle = ? WHERE id = ?`,
-    [class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, salle || null, id]
+    `UPDATE timetable_slots
+        SET class_alias_id = ?, teacher_assignment_id = ?, jour_semaine = ?, heure_debut = ?, heure_fin = ?,
+            nb_heures = ?, duree_libre = ?, salle = ?
+      WHERE id = ?`,
+    [class_alias_id, teacher_assignment_id, jour_semaine, heure_debut, heure_fin, nb_heures, duree_libre ? 1 : 0, salle || null, id]
   );
   return findById(id);
 }

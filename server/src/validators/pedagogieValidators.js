@@ -18,9 +18,11 @@ const creneauSchema = z.object({
   academic_year_id: z.coerce.number().int().positive().optional().nullable(),
   class_alias_id: z.coerce.number().int().positive('L’alias est requis.'),
   teacher_assignment_id: z.coerce.number().int().positive('L’affectation est requise.'),
-  jour_semaine: z.coerce.number().int().min(1, 'Jour invalide (1=lundi … 7=dimanche).').max(7),
+  jour_semaine: z.coerce.number().int().min(1, 'Jour invalide (1=lundi … 5=vendredi).').max(5, 'Aucun cours le samedi ni le dimanche (1=lundi … 5=vendredi).'),
   heure_debut: z.string().regex(/^\d{2}:\d{2}/, 'Heure attendue (HH:MM).'),
   nb_heures: z.coerce.number().int().min(1).max(8).default(1),
+  // Primaire uniquement : durée libre, heure de fin saisie explicitement.
+  heure_fin: z.string().regex(/^\d{2}:\d{2}/, 'Heure attendue (HH:MM).').optional().nullable(),
   salle: z.string().trim().max(50).optional().nullable(),
 });
 

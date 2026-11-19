@@ -36,7 +36,7 @@ function enTete(doc, ecole, logoPath) {
   doc.fontSize(8.5).fillColor(GRIS).font('Helvetica');
   const ligne = [ecole.adresse, ecole.telephone, ecole.email].filter(Boolean).join('  ·  ');
   if (ligne) doc.text(ligne, logoPath ? 116 : 40, doc.y, { width: 430 });
-  doc.moveTo(40, y + 58).lineTo(555, y + 58).lineWidth(2).strokeColor(BLEU).stroke();
+  doc.moveTo(40, y + 58).lineTo(doc.page.width - 40, y + 58).lineWidth(2).strokeColor(BLEU).stroke();
   doc.y = y + 70;
 }
 
@@ -44,8 +44,9 @@ function piedDePage(doc, totalPages) {
   const range = doc.bufferedPageRange();
   for (let i = range.start; i < range.start + range.count; i += 1) {
     doc.switchToPage(i);
+    const bas = doc.page.height - 55;
     doc.fontSize(7.5).fillColor(GRIS).font('Helvetica')
-      .text('Document généré automatiquement — School Vie', 40, 800, { width: 515, align: 'center' });
+      .text('Document généré automatiquement — School Vie', 40, bas, { width: doc.page.width - 80, align: 'center' });
   }
 }
 
@@ -55,10 +56,16 @@ function piedDePage(doc, totalPages) {
  * @param {string} nomFichier nom proposé au téléchargement
  * @returns {Promise<PDFDocument>}
  */
-async function creerDocument(res, nomFichier) {
+async function creerDocument(res, nomFichier, options = {}) {
   const ecole = (await settingsRepo.get()) || {};
   const logoPath = await lireCheminLogo();
-  const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true, info: { Title: nomFichier, Author: 'School Vie' } });
+  const doc = new PDFDocument({
+    size: 'A4',
+    layout: options.paysage ? 'landscape' : 'portrait',
+    margin: 40,
+    bufferPages: true,
+    info: { Title: nomFichier, Author: 'School Vie' },
+  });
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `inline; filename="${nomFichier}"`);
   res.setHeader('Cache-Control', 'no-store');
@@ -106,4 +113,7 @@ const formatMontant = (valeur, devise = 'FCFA') => {
   return `${neg ? '-' : ''}${nombre} ${devise}`;
 };
 
-module.exports = { creerDocument, finaliser, titreDocument, ligneCleValeur, encadreMontant, formatMontant, BLEU, GRIS, GRIS_FONCE };
+module.exports = {
+  creerDocument, finaliser, titreDocument, ligneCleValeur, encadreMontant, formatMontant,
+  enTete, lireCheminLogo, BLEU, BLEU_CLAIR, GRIS, GRIS_FONCE,
+};

@@ -257,14 +257,28 @@ test('EDT : deux créneaux chevauchants pour le même alias → 409', async () =
 
   const c1 = await agent.post('/api/directeur/edt')
     .set('Authorization', `Bearer ${state.directeurToken}`)
-    .send({ class_alias_id: state.aliasId, teacher_assignment_id: assignmentId, jour_semaine: 2, heure_debut: '08:00', nb_heures: 1, salle: 'A1' });
-  assert.equal(c1.status, 201);
+    .send({ class_alias_id: state.aliasId, teacher_assignment_id: assignmentId, jour_semaine: 2, heure_debut: '07:00', heure_fin: '08:00', salle: 'A1' });
+  assert.equal(c1.status, 201, JSON.stringify(c1.body));
 
   const c2 = await agent.post('/api/directeur/edt')
     .set('Authorization', `Bearer ${state.directeurToken}`)
-    .send({ class_alias_id: state.aliasId, teacher_assignment_id: assignmentId, jour_semaine: 2, heure_debut: '08:30', nb_heures: 1, salle: 'A2' });
+    .send({ class_alias_id: state.aliasId, teacher_assignment_id: assignmentId, jour_semaine: 2, heure_debut: '07:55', heure_fin: '08:55', salle: 'A2' });
   assert.equal(c2.status, 409);
   assert.ok(['CRENEAU_ALIAS', 'CRENEAU_PROF'].includes(c2.body.code));
+
+  // Aucun cours le samedi ni le dimanche (1=lundi … 5=vendredi).
+  const weekEnd = await agent.post('/api/directeur/edt')
+    .set('Authorization', `Bearer ${state.directeurToken}`)
+    .send({ class_alias_id: state.aliasId, teacher_assignment_id: assignmentId, jour_semaine: 6, heure_debut: '07:00', heure_fin: '08:00' });
+  assert.equal(weekEnd.status, 400);
+});
+
+test('EDT : génération du PDF (directeur)', async () => {
+  const res = await agent.get(`/api/directeur/edt/pdf?class_alias_id=${state.aliasId}`)
+    .set('Authorization', `Bearer ${state.directeurToken}`)
+    .buffer(true);
+  assert.equal(res.status, 200);
+  assert.match(res.headers['content-type'] || '', /application\/pdf/);
 });
 
 /* ===== SÉCURITÉ TRANSVERSALE ===== */

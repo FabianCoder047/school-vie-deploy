@@ -1,25 +1,21 @@
-// Emploi du temps : créneaux de 55 min (ou multiples), fin calculée,
-// détection des chevauchements (même alias / même professeur / même salle).
+// Emploi du temps : créneaux de 55 min (ou multiples) pour le collège/lycée,
+// durée libre au primaire. Fin calculée/validée selon les horaires de la base
+// (migration 008), détection des chevauchements (alias / prof / salle).
 const { ApiError } = require('../utils/ApiError');
 const yearRepo = require('../repositories/academicYearRepository');
 const aliasRepo = require('../repositories/classAliasRepository');
-const settingsRepo = require('../repositories/settingsRepository');
 const assignRepo = require('../repositories/teacherAssignmentRepository');
 const timetableRepo = require('../repositories/timetableRepository');
-const { heureEnMinutes, minutesEnHeure, plagesSeChevauchent } = require('../utils/timeUtils');
+const { plagesSeChevauchent } = require('../utils/timeUtils');
 const { log: audit } = require('../repositories/auditRepository');
+const horaires = require('../config/horairesScolaires');
 const pool = require('../config/db');
 
-const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'];
 
 /** Durée d'une heure de cours depuis school_settings (fallback 55). */
 async function dureeHeure() {
-  try {
-    const s = await settingsRepo.get();
-    return Number(s?.duree_heure_minutes) || 55;
-  } catch {
-    return 55;
-  }
+  return (await horaires.regles()).dureeHeureMinutes;
 }
 
 async function anneeCouranteOu(anneeId) {
@@ -44,19 +40,37 @@ async function affectationsPourAlias({ class_alias_id, academic_year_id }) {
   return timetableRepo.assignmentsForAlias(anneeId, Number(class_alias_id));
 }
 
-/** Calcule la fin de créneau + contrôle des chevauchements (alias/prof/salle). */
-async function controlerConflits({ academicYearId, data, excludeId = null }) {
-  const duree = await dureeHeure();
-  const nbHeures = Number(data.nb_heures);
-  if (!Number.isInteger(nbHeures) || nbHeures < 1 || nbHeures > 8) {
-    throw ApiError.badRequest('Le nombre d’heures par créneau doit être un entier entre 1 et 8.', 'NB_HEURES_INVALIDE');
+/** Calcule la fin du créneau, vérifie les horaires puis les chevauchements. */
+async function controlerConflits({ academicYearId, data, primaire, excludeId = null }) {
+  const jour = Number(data.jour_semaine);
+  if (!Number.isInteger(jour) || jour < 1 || jour > 5) {
+    throw ApiError.badRequest('Aucun cours le samedi ni le dimanche (1=lundi … 5=vendredi).', 'JOUR_INVALIDE');
   }
-  const debut = heureEnMinutes(data.heure_debut);
-  const fin = debut + nbHeures * duree;
-  if (fin >= 24 * 60) {
-    throw ApiError.badRequest('Le créneau dépasserait minuit.', 'HEURE_FIN_INVALIDE');
+  const regles = await horaires.regles();
+  let heure_fin;
+  let nbHeures;
+  let dureeLibre = false;
+
+  if (primaire) {
+    // Primaire : durée libre, l'utilisateur saisit lui-même l'heure de fin.
+    if (!data.heure_fin) {
+      throw ApiError.badRequest('Au primaire, indiquez l’heure de fin du créneau.', 'HEURE_FIN_REQUISE');
+    }
+    heure_fin = String(data.heure_fin).slice(0, 5);
+    nbHeures = 0;
+    dureeLibre = true;
+  } else {
+    nbHeures = Number(data.nb_heures);
+    if (!Number.isInteger(nbHeures) || nbHeures < 1 || nbHeures > 8) {
+      throw ApiError.badRequest('Le nombre d’heures par créneau doit être un entier entre 1 et 8.', 'NB_HEURES_INVALIDE');
+    }
+    heure_fin = horaires.heureFinCalculee(data.heure_debut, nbHeures, regles);
   }
-  const heure_fin = minutesEnHeure(fin);
+
+  const verification = horaires.verifierCreneau({ debut: data.heure_debut, fin: heure_fin, primaire, r: regles });
+  if (!verification.valide) {
+    throw ApiError.badRequest(verification.message, verification.code);
+  }
 
   // Professeur du créneau via l'affectation (contrôles croisés côté service).
   const affectation = await assignRepo.findById(Number(data.teacher_assignment_id));
@@ -93,7 +107,7 @@ async function controlerConflits({ academicYearId, data, excludeId = null }) {
       );
     }
   }
-  return { heure_fin, nbHeures };
+  return { heure_fin, nbHeures, dureeLibre };
 }
 
 async function assertAssignationCoherente(anneeId, teacherAssignmentId, classAliasId) {
@@ -113,8 +127,13 @@ async function creerCreneau(data, actorId, ip) {
   if (!anneeId) throw ApiError.badRequest('Aucune année académique courante n’est définie.', 'NO_CURRENT_YEAR');
   await assertAssignationCoherente(anneeId, data.teacher_assignment_id, data.class_alias_id);
 
-  const { heure_fin, nbHeures } = await controlerConflits({ academicYearId: anneeId, data });
-  const creneau = await timetableRepo.create({ ...data, academic_year_id: anneeId, nb_heures: nbHeures, heure_fin, salle: data.salle?.trim() || null });
+  const { heure_fin, nbHeures, dureeLibre } = await controlerConflits({
+    academicYearId: anneeId, data, primaire: horaires.estPrimaire(alias.cycle_nom),
+  });
+  const creneau = await timetableRepo.create({
+    ...data, academic_year_id: anneeId, nb_heures: nbHeures, duree_libre: dureeLibre,
+    heure_fin, salle: data.salle?.trim() || null,
+  });
   await audit({ userId: actorId, action: 'CREATE', entity: 'timetable_slots', entityId: creneau.id, newValues: data, ipAddress: ip });
   return creneau;
 }
@@ -124,9 +143,14 @@ async function modifierCreneau(id, data, actorId, ip) {
   if (!existant) throw ApiError.notFound('Créneau introuvable.');
   const anneeId = existant.academic_year_id;
   await assertAssignationCoherente(anneeId, data.teacher_assignment_id, data.class_alias_id);
+  const alias = await aliasRepo.findById(data.class_alias_id);
 
-  const { heure_fin, nbHeures } = await controlerConflits({ academicYearId: anneeId, data, excludeId: id });
-  const creneau = await timetableRepo.update(id, { ...data, nb_heures: nbHeures, heure_fin, salle: data.salle?.trim() || null });
+  const { heure_fin, nbHeures, dureeLibre } = await controlerConflits({
+    academicYearId: anneeId, data, primaire: horaires.estPrimaire(alias?.cycle_nom), excludeId: id,
+  });
+  const creneau = await timetableRepo.update(id, {
+    ...data, nb_heures: nbHeures, duree_libre: dureeLibre, heure_fin, salle: data.salle?.trim() || null,
+  });
   await audit({ userId: actorId, action: 'UPDATE', entity: 'timetable_slots', entityId: id, oldValues: existant, newValues: data, ipAddress: ip });
   return creneau;
 }
@@ -139,4 +163,7 @@ async function supprimerCreneau(id, actorId, ip) {
   return { success: true };
 }
 
-module.exports = { listerCreneaux, affectationsPourAlias, creerCreneau, modifierCreneau, supprimerCreneau, dureeHeure };
+module.exports = {
+  listerCreneaux, affectationsPourAlias, creerCreneau, modifierCreneau, supprimerCreneau,
+  dureeHeure, configurationHoraires: horaires.configuration,
+};

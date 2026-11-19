@@ -38,6 +38,13 @@ const parametresSchema = z.object({
   devise: z.string().trim().min(1).max(10).default('FCFA'),
   note_max: z.coerce.number().positive('La note maximale doit être positive.').max(100).default(20),
   duree_heure_minutes: z.coerce.number().int().min(1, 'Durée invalide.').max(180).default(55),
+  debut_journee: z.string().regex(/^\d{2}:\d{2}$/, 'Heure attendue (HH:MM).').default('07:00'),
+  pause_matin_debut: z.string().regex(/^\d{2}:\d{2}$/, 'Heure attendue (HH:MM).').default('09:45'),
+  pause_matin_fin: z.string().regex(/^\d{2}:\d{2}$/, 'Heure attendue (HH:MM).').default('10:10'),
+  fin_matin: z.string().regex(/^\d{2}:\d{2}$/, 'Heure attendue (HH:MM).').default('12:00'),
+  debut_apres_midi: z.string().regex(/^\d{2}:\d{2}$/, 'Heure attendue (HH:MM).').default('14:30'),
+  fin_apres_midi: z.string().regex(/^\d{2}:\d{2}$/, 'Heure attendue (HH:MM).').default('17:30'),
+  fin_primaire: z.string().regex(/^\d{2}:\d{2}$/, 'Heure attendue (HH:MM).').default('11:30'),
 });
 
 /* ===== Comptes (Admin/Directeur) ===== */

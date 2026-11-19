@@ -14,12 +14,13 @@ const logger = require('../utils/logger');
 const TYPES = {
   cartes: { colonne: 'cartes_impression_autorisee', titre: 'Cartes scolaires', genre: 'des cartes scolaires' },
   bulletins: { colonne: 'bulletins_impression_autorisee', titre: 'Bulletins', genre: 'des bulletins' },
+  edts: { colonne: 'edts_impression_autorisee', titre: 'Emplois du temps', genre: 'des emplois du temps' },
 };
 
 /** Active ou révoque l'autorisation d'impression ; notifie les secrétaires ; trace l'audit. */
 async function basculer(type, autorisee, actorId, ip) {
   const cfg = TYPES[type];
-  if (!cfg) throw ApiError.badRequest('Type d’autorisation invalide (cartes ou bulletins).', 'TYPE_INVALIDE');
+  if (!cfg) throw ApiError.badRequest('Type d’autorisation invalide (cartes, bulletins ou edts).', 'TYPE_INVALIDE');
   const avant = await settingsRepo.get();
   const parametres = await settingsRepo.setAutorisationImpression(type, autorisee);
 

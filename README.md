@@ -375,9 +375,17 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
   un bandeau d'alerte s'affiche sur la page Périodes.
 - **Notes** : 0–20 côté API (Zod + service) et côté interface (cellule rouge si
   hors bornes). Upsert en transaction : un prof ne touche QUE ses matières×alias.
-- **EDT** : créneaux `nb_heures × 55 min` ; `heure_fin` calculée. Conflits
-  (alias / professeur / salle) → 409 avec message précis (date, jour, horaire).
-  Déplacement par glisser-déposer (snap 55 min) ou via l'édition.
+- **EDT** : journée type **07:00 → pause 09:45–10:10 → reprise 10:10 → 12:00**,
+  retour des collégiens/lycéens à **14:30** (fin configurable, 17:30 par défaut).
+  1 heure de cours = **55 min** ; les créneaux collège/lycée commencent sur la
+  grille (07:00, 07:55, 08:50, 10:10, 11:05, 14:30, …) et ne peuvent traverser
+  ni la pause ni le retour à la maison. Au **primaire**, la durée est libre
+  (heure de fin saisie) mais les cours s'arrêtent à **11:30**, sans créneau
+  l'après-midi. Toutes ces heures sont modifiables dans Paramètres → Horaires.
+  Conflits (alias / professeur / salle) → 409 avec message précis.
+  Déplacement par glisser-déposer (snap sur les heures autorisées) ou via l'édition.
+  **Impression** : PDF A4 paysage par alias, classe ou cycle (une page par alias),
+  avec aperçu avant impression ; feu vert du directeur requis pour la secrétaire.
 - **Appel** : unique par (affectation, date, heure de début) — la re-saisie le
   jour même remplace la séance sans doubler ; notifications aux parents UNIQUEMENT
   pour les NOUVEAUX absents/retards (idempotence).

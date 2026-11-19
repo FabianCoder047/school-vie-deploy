@@ -41,6 +41,7 @@ const impression = require('../controllers/impressionController');
 const { impressionSchema } = require('../validators/configurationValidators');
 router.put('/impressions/cartes', validate(impressionSchema), impression.basculerCartes);
 router.put('/impressions/bulletins', validate(impressionSchema), impression.basculerBulletins);
+router.put('/impressions/edts', validate(impressionSchema), impression.basculerEdts);
 
 /* Signature du directeur (dessinée dans l'app, souris ou doigt, ou uploadée si la main n'y arrive pas) */
 const directeurSignature = require('../controllers/directeurSignatureController');

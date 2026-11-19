@@ -22,6 +22,8 @@ router.get('/alias/classe/:classId', aff.listerAliasDeClasse);
 router.get('/parametres', settings.lireParametres);
 // Lecture des périodes (fenêtres de saisie visibles par les professeurs)
 router.get('/periodes', pedagogie.listerPeriodes);
+// Horaires de l'emploi du temps (pause, 55 min, retour 14h30, fin primaire…)
+router.get('/edt-config', pedagogie.configurationEdt);
 // Communiqués pour le tableau de bord de l'utilisateur connecté :
 // pilotage (ADMIN/DIRECTEUR/SECRETAIRE) → tout ; autres rôles → ceux qui les concernent.
 router.get('/communiques', documents.listerCommuniquesPourMoi);

@@ -12,11 +12,12 @@ const notificationRepo = require('../repositories/notificationRepository');
 const { waLink } = require('../utils/waLink');
 
 const JOUR_SEMAINE = () => {
-  // JS : 0=dimanche … 6=samedi ; schéma : 1=lundi … 7=dimanche
+  // JS : 0=dimanche … 6=samedi ; schéma : 1=lundi … 5=vendredi.
+  // Week-end : aucun cours, on renvoie null.
   const d = new Date().getDay();
-  return d === 0 ? 7 : d;
+  return d === 0 || d === 6 ? null : d;
 };
-const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'];
 
 /** Séance existante + records (pré-remplissage de l'écran d'appel). */
 async function seanceDuJour({ teacherAssignmentId, dateCours, heureDebut }) {
@@ -252,6 +253,7 @@ async function detailsSeance(teacherAssignmentId) {
 /** Créneaux du professeur pour aujourd'hui (écran d'appel). */
 async function creneauxDuJour(teacherId) {
   const jour = JOUR_SEMAINE();
+  if (!jour) return []; // samedi / dimanche : pas de cours
   const courante = await pool.query('SELECT id FROM academic_years WHERE is_current = 1 LIMIT 1').then(([[r]]) => r?.id || null);
   if (!courante) return [];
   const [rows] = await pool.query(

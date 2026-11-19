@@ -10,6 +10,7 @@ export default function EmploiDuTempsEnfantPage() {
   const { enfants, enfantId, setEnfantId, enfantSelectionne, chargement } = useEnfants();
   const [searchParams] = useSearchParams();
   const [creneaux, setCreneaux] = useState([]);
+  const [config, setConfig] = useState(null);
   const [erreur, setErreur] = useState('');
   const [chargementEdt, setChargementEdt] = useState(false);
 
@@ -22,8 +23,8 @@ export default function EmploiDuTempsEnfantPage() {
     if (!enfantId) { setCreneaux([]); return; }
     setChargementEdt(true);
     setErreur('');
-    api.get(`/parent/edt/${enfantId}`)
-      .then(({ data }) => setCreneaux(data.creneaux || []))
+    Promise.all([api.get(`/parent/edt/${enfantId}`), api.get('/edt-config')])
+      .then(([edt, cfg]) => { setCreneaux(edt.data.creneaux || []); setConfig(cfg.data); })
       .catch(() => setErreur('Impossible de charger l’emploi du temps.'))
       .finally(() => setChargementEdt(false));
   }, [enfantId]);
@@ -52,7 +53,12 @@ export default function EmploiDuTempsEnfantPage() {
       {erreur && <div className="auth-erreur mb-4" role="alert">{erreur}</div>}
       {chargementEdt ? <div className="spinner" /> : evenements.length === 0
         ? <Card><p className="text-doux">Aucun créneau planifié pour la classe de votre enfant.</p></Card>
-        : <Calendar evenements={evenements} lectureSeule />}
+        : <Calendar
+            evenements={evenements}
+            lectureSeule
+            config={config}
+            estPrimaire={String(enfantSelectionne?.cycle_nom || '').toLowerCase().includes('primaire')}
+          />}
     </>
   );
 }

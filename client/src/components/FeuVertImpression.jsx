@@ -1,5 +1,5 @@
 // Feu vert du directeur — autorisation (permanente, activable/désactivable)
-// d'impression des cartes scolaires ou des bulletins PAR LA SECRÉTAIRE.
+// d'impression des cartes scolaires, bulletins ou emplois du temps PAR LA SECRÉTAIRE.
 // Visible uniquement du directeur, sur les écrans Cartes / Bulletins.
 import { useEffect, useState } from 'react';
 import api, { messageErreur } from '../api/axios';
@@ -10,7 +10,7 @@ import Button from './Button';
 import Badge from './Badge';
 
 /**
- * @param {{ type: 'cartes' | 'bulletins' }} props
+ * @param {{ type: 'cartes' | 'bulletins' | 'edts' }} props
  * Émet l'événement window 'feu-vert-change' (detail: {type, autorisee}) pour que
  * les pages partagées se resynchronisent sans rechargement.
  */
@@ -22,8 +22,9 @@ export default function FeuVertImpression({ type }) {
   const [envoi, setEnvoi] = useState(false);
 
   const estCartes = type === 'cartes';
-  const libelle = estCartes ? 'cartes scolaires' : 'bulletins';
-  const colonne = estCartes ? 'cartes_impression_autorisee' : 'bulletins_impression_autorisee';
+  const estEdts = type === 'edts';
+  const libelle = estCartes ? 'cartes scolaires' : (estEdts ? 'emplois du temps' : 'bulletins');
+  const colonne = estCartes ? 'cartes_impression_autorisee' : (estEdts ? 'edts_impression_autorisee' : 'bulletins_impression_autorisee');
 
   useEffect(() => {
     let actif = true;

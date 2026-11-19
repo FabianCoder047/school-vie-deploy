@@ -150,12 +150,15 @@ export default function AppelPage() {
   if (chargement) return (<><h1 className="page-titre">Appel</h1><div className="spinner" /></>);
 
   const today = new Date();
+  const estWeekEnd = today.getDay() === 0 || today.getDay() === 6;
   return (
     <>
       <h1 className="page-titre">Appel — {JOURS[today.getDay()]} {today.toLocaleDateString('fr-FR')}</h1>
       {erreur && <div className="auth-erreur mb-4" role="alert">{erreur}</div>}
 
-      {creneaux.length === 0 ? (
+      {estWeekEnd ? (
+        <Card><p className="text-doux">Pas de cours le samedi ni le dimanche — l’appel reprend lundi.</p></Card>
+      ) : creneaux.length === 0 ? (
         <Card><p className="text-doux">Aucun cours planifié aujourd’hui pour vous.</p></Card>
       ) : (
         <>

@@ -1,19 +1,26 @@
 // Paramètres de l'école (ligne unique id = 1) + uploads (logo, signature, cachet).
 const pool = require('../config/db');
 
-const PUBLIC = 'id, nom, logo_path, adresse, bp, ville, pays, telephone, email, directeur_nom, signature_path, cachet_path, devise, note_max, duree_heure_minutes, cartes_impression_autorisee, bulletins_impression_autorisee';
+const PUBLIC = 'id, nom, logo_path, adresse, bp, ville, pays, telephone, email, directeur_nom, signature_path, cachet_path, devise, note_max, duree_heure_minutes, debut_journee, pause_matin_debut, pause_matin_fin, fin_matin, debut_apres_midi, fin_apres_midi, fin_primaire, cartes_impression_autorisee, bulletins_impression_autorisee, edts_impression_autorisee';
 
 async function get() {
   const [[row]] = await pool.query(`SELECT ${PUBLIC} FROM school_settings WHERE id = 1`);
   return row || null;
 }
 
-async function update({ nom, adresse, bp, ville, pays, telephone, email, directeur_nom, devise, note_max, duree_heure_minutes }) {
+async function update({
+  nom, adresse, bp, ville, pays, telephone, email, directeur_nom, devise, note_max, duree_heure_minutes,
+  debut_journee, pause_matin_debut, pause_matin_fin, fin_matin, debut_apres_midi, fin_apres_midi, fin_primaire,
+}) {
   await pool.query(
     `UPDATE school_settings
-        SET nom = ?, adresse = ?, bp = ?, ville = ?, pays = ?, telephone = ?, email = ?, directeur_nom = ?, devise = ?, note_max = ?, duree_heure_minutes = ?
+        SET nom = ?, adresse = ?, bp = ?, ville = ?, pays = ?, telephone = ?, email = ?, directeur_nom = ?,
+            devise = ?, note_max = ?, duree_heure_minutes = ?, debut_journee = ?, pause_matin_debut = ?,
+            pause_matin_fin = ?, fin_matin = ?, debut_apres_midi = ?, fin_apres_midi = ?, fin_primaire = ?
       WHERE id = 1`,
-    [nom, adresse || null, bp || null, ville || null, pays || null, telephone || null, email || null, directeur_nom || null, devise, note_max, duree_heure_minutes]
+    [nom, adresse || null, bp || null, ville || null, pays || null, telephone || null, email || null, directeur_nom || null,
+      devise, note_max, duree_heure_minutes, debut_journee, pause_matin_debut, pause_matin_fin, fin_matin,
+      debut_apres_midi, fin_apres_midi, fin_primaire]
   );
   return get();
 }
@@ -31,7 +38,13 @@ async function updateSignature(signaturePath) {
 /** Feu vert du directeur : autorisation (permanente, activable/désactivable)
  *  d'impression des cartes ou des bulletins par la secrétaire. */
 async function setAutorisationImpression(type, autorisee) {
-  const colonne = type === 'cartes' ? 'cartes_impression_autorisee' : 'bulletins_impression_autorisee';
+  const colonnes = {
+    cartes: 'cartes_impression_autorisee',
+    bulletins: 'bulletins_impression_autorisee',
+    edts: 'edts_impression_autorisee',
+  };
+  const colonne = colonnes[type];
+  if (!colonne) throw new Error(`Type d’autorisation inconnu : ${type}`);
   await pool.query(`UPDATE school_settings SET ${colonne} = ? WHERE id = 1`, [autorisee ? 1 : 0]);
   return get();
 }

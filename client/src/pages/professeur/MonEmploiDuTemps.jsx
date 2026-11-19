@@ -8,15 +8,19 @@ import Badge from '../../components/Badge';
 export default function MonEmploiDuTempsPage() {
   const [creneaux, setCreneaux] = useState([]);
   const [annee, setAnnee] = useState(null);
+  const [config, setConfig] = useState(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
 
   useEffect(() => {
-    api.get('/professeur/mon-edt')
-      .then(({ data }) => { setAnnee(data.annee); setCreneaux(data.creneaux || []); })
+    Promise.all([api.get('/professeur/mon-edt'), api.get('/edt-config')])
+      .then(([edt, cfg]) => { setAnnee(edt.data.annee); setCreneaux(edt.data.creneaux || []); setConfig(cfg.data); })
       .catch(() => setErreur('Impossible de charger votre emploi du temps.'))
       .finally(() => setChargement(false));
   }, []);
+
+  const estPrimaire = creneaux.length > 0
+    && creneaux.every((c) => String(c.cycle_nom || '').toLowerCase().includes('primaire'));
 
   const evenements = creneaux.map((c) => ({
     id: c.id,
@@ -36,7 +40,7 @@ export default function MonEmploiDuTempsPage() {
       {erreur && <div className="auth-erreur mb-4" role="alert">{erreur}</div>}
       {evenements.length === 0
         ? <Card><p className="text-doux">Aucun créneau planifié pour vous cette année.</p></Card>
-        : <Calendar evenements={evenements} lectureSeule />}
+        : <Calendar evenements={evenements} lectureSeule config={config} estPrimaire={estPrimaire} />}
     </>
   );
 }

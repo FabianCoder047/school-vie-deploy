@@ -640,6 +640,8 @@
 .calendrier-jour-entete { background: var(--bleu-50); font-weight: 800; font-size: 12px; color: var(--bleu-900); padding: 10px 6px; text-align: center; border-bottom: 2px solid var(--bleu-100); position: sticky; top: 0; z-index: 3; }
 .calendrier-gouttiere-entete { background: var(--bleu-50); border-bottom: 2px solid var(--bleu-100); position: sticky; top: 0; z-index: 3; }
 .calendrier-jour-fond { height: 48px; border-bottom: 1px solid var(--gris-100); }
+.calendrier-pause-heure { height: 30px; font-size: 9px; font-weight: 700; color: #b45309; padding: 2px 6px; border-bottom: 1px dashed #fcd34d; background: #fffbeb; }
+.calendrier-jour-pause { height: 30px; border-bottom: 1px dashed #fcd34d; background: repeating-linear-gradient(45deg, #fffbeb, #fffbeb 8px, #fff7d6 8px, #fff7d6 16px); }
 .evenement {
   position: absolute; left: 3px; right: 3px;
   background: var(--bleu-600); color: #fff; border-radius: var(--rayon-sm);

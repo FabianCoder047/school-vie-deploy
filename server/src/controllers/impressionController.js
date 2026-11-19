@@ -13,4 +13,10 @@ async function basculerBulletins(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { basculerCartes, basculerBulletins };
+async function basculerEdts(req, res, next) {
+  try {
+    res.json(await impressionService.basculer('edts', Boolean(req.body.autorisee), req.user.id, req.ip));
+  } catch (err) { next(err); }
+}
+
+module.exports = { basculerCartes, basculerBulletins, basculerEdts };

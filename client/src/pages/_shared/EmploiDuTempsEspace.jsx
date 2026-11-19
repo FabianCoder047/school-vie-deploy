@@ -1,6 +1,7 @@
 // Emploi du temps par cycle → classe → alias (Directeur / Secrétaire — même écran partagé).
-// Vue semaine (Calendar), création / déplacement (drag & drop) / suppression.
-// 1 heure de cours = 55 minutes.
+// Vue semaine, création / déplacement / suppression. Règles horaires centralisées
+// côté API (/edt-config) : 07:00, 55 min/heure, pause 09:45–10:10, 12:00,
+// retour 14:30, primaire → fin 11:30 avec durée libre.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api, { messageErreur } from '../../api/axios';
 import { useToast } from '../../hooks/useToast';
@@ -11,19 +12,21 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
+import ApercuPdf from '../../components/ApercuPdf';
+import FeuVertImpression from '../../components/FeuVertImpression';
+import {
+  REGLES_DEFAUT, enMinutes, enHeure, heureDepuisY, debutsPossibles, segmentsDepuisRegles,
+} from '../../components/horairesEdt';
 
-const JOURS_LABEL = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const HEURE_DEBUT_MIN = 7 * 60;
-const JOURS_DND = [
-  { numero: 1, label: 'Lundi' }, { numero: 2, label: 'Mardi' }, { numero: 3, label: 'Mercredi' },
-  { numero: 4, label: 'Jeudi' }, { numero: 5, label: 'Vendredi' }, { numero: 6, label: 'Samedi' },
-];
+const JOURS_LABEL = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'];
 
 export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
   const apiBase = espace === 'directeur' ? '/directeur' : '/secretaire';
+  const estDirecteur = espace === 'directeur';
   const toast = useToast();
   const { supprimer } = useConfirm();
   const [cycles, setCycles] = useState([]);
+  const [config, setConfig] = useState(null);
   const [classesFiltrees, setClassesFiltrees] = useState([]);
   const [aliases, setAliases] = useState([]);
   const [cycleId, setCycleId] = useState('');
@@ -38,12 +41,41 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
   const [enEdition, setEnEdition] = useState(null);
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
-  const [form, setForm] = useState({ teacher_assignment_id: '', jour_semaine: 2, heure_debut: '08:00', nb_heures: 1, salle: '' });
+  const [form, setForm] = useState({
+    teacher_assignment_id: '', jour_semaine: 2, heure_debut: '07:00', heure_fin: '09:45', nb_heures: 1, salle: '',
+  });
 
-  // Référentiels
+  // Feu vert du directeur pour l'impression par la secrétaire.
+  const [autorisationEdt, setAutorisationEdt] = useState(estDirecteur ? true : null);
+  const [apercu, setApercu] = useState(null); // { url, titre }
+  useEffect(() => {
+    let actif = true;
+    api.get('/parametres')
+      .then(({ data }) => { if (actif) setAutorisationEdt(Boolean(data?.edts_impression_autorisee)); })
+      .catch(() => { if (actif) setAutorisationEdt(false); });
+    const surFeuVert = (e) => { if (e.detail?.type === 'edts') setAutorisationEdt(Boolean(e.detail.autorisee)); };
+    window.addEventListener('feu-vert-change', surFeuVert);
+    const minuteur = window.setInterval(() => {
+      api.get('/parametres').then(({ data }) => { if (actif) setAutorisationEdt(Boolean(data?.edts_impression_autorisee)); }).catch(() => {});
+    }, 30000);
+    return () => {
+      actif = false;
+      window.removeEventListener('feu-vert-change', surFeuVert);
+      window.clearInterval(minuteur);
+    };
+  }, []);
+  const peutImprimer = estDirecteur || autorisationEdt === true;
+
+  const regles = config?.regles || REGLES_DEFAUT;
+  const duree = regles.dureeHeureMinutes || 55;
+  const estPrimaire = Boolean(cycleId && config?.cyclesPrimaire?.map(Number).includes(Number(cycleId)));
+  const segments = useMemo(() => segmentsDepuisRegles(regles, estPrimaire), [regles, estPrimaire]);
+
+  // Référentiels + horaires
   useEffect(() => {
     api.get('/cycles?parPage=100').then(({ data }) => setCycles(data.rows || [])).catch(() => setCycles([]));
     api.get('/annees-academiques/courante').then(({ data }) => setAnnee(data)).catch(() => setAnnee(null));
+    api.get('/edt-config').then(({ data }) => setConfig(data)).catch(() => setConfig(null));
   }, []);
   useEffect(() => {
     setClassesFiltrees([]);
@@ -71,38 +103,70 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
       .then(([c, a]) => { setCreneaux(c.data || []); setAffectations(a.data || []); })
       .catch((err) => setErreur(messageErreur(err, 'Chargement impossible.')))
       .finally(() => setChargement(false));
-  }, [aliasId]);
+  }, [aliasId, apiBase]);
   useEffect(() => { charger(); }, [charger]);
+
+  const creneauxInvalides = useMemo(() => {
+    const debutAutories = estPrimaire ? [] : debutsPossibles(regles);
+    return creneaux.filter((c) => {
+      const debut = String(c.heure_debut).slice(0, 5);
+      const fin = String(c.heure_fin).slice(0, 5);
+      const dansPlage = segments.some((s) => s.type === 'cours'
+        && enMinutes(debut) >= enMinutes(s.debut) && enMinutes(fin) <= enMinutes(s.fin));
+      return !dansPlage || (!estPrimaire && !debutAutories.includes(debut));
+    });
+  }, [creneaux, segments, estPrimaire, regles]);
 
   const evenements = useMemo(() => creneaux.map((c) => ({
     id: c.id,
     jour: c.jour_semaine,
     heureDebut: String(c.heure_debut).slice(0, 5),
     heureFin: String(c.heure_fin).slice(0, 5),
-    titre: `${c.matiere_nom}`,
+    titre: c.matiere_nom,
     sousTitre: `${c.prof_prenom} ${c.prof_nom}${c.salle ? ` · Salle ${c.salle}` : ''}`,
     brut: c,
   })), [creneaux]);
 
+  const debuts = useMemo(() => {
+    if (estPrimaire) return [];
+    const liste = debutsPossibles(regles);
+    const courant = String(form.heure_debut || '').slice(0, 5);
+    return courant && !liste.includes(courant) ? [courant, ...liste] : liste;
+  }, [estPrimaire, regles, form.heure_debut]);
+
   const ouvrirCreation = () => {
     setEnEdition(null);
     setErreur('');
-    setForm({ teacher_assignment_id: affectations[0]?.teacher_assignment_id || '', jour_semaine: 2, heure_debut: '08:00', nb_heures: 1, salle: '' });
+    setForm({
+      teacher_assignment_id: affectations[0]?.teacher_assignment_id || '',
+      jour_semaine: 2,
+      heure_debut: estPrimaire ? regles.debutJournee : (debutsPossibles(regles)[0] || regles.debutJournee),
+      heure_fin: estPrimaire ? regles.pause.debut : '',
+      nb_heures: 1,
+      salle: '',
+    });
     setModalOuvert(true);
   };
 
   const ouvrirEdition = (ev) => {
-    setEnEdition(ev.brut);
+    const c = ev.brut;
+    setEnEdition(c);
     setErreur('');
     setForm({
-      teacher_assignment_id: ev.brut.teacher_assignment_id,
-      jour_semaine: ev.brut.jour_semaine,
-      heure_debut: String(ev.brut.heure_debut).slice(0, 5),
-      nb_heures: ev.brut.nb_heures,
-      salle: ev.brut.salle || '',
+      teacher_assignment_id: c.teacher_assignment_id,
+      jour_semaine: c.jour_semaine,
+      heure_debut: String(c.heure_debut).slice(0, 5),
+      heure_fin: String(c.heure_fin).slice(0, 5),
+      nb_heures: c.duree_libre ? 1 : (c.nb_heures || 1),
+      salle: c.salle || '',
     });
     setModalOuvert(true);
   };
+
+  const heureFin = useMemo(() => {
+    if (estPrimaire) return form.heure_fin;
+    return enHeure(enMinutes(form.heure_debut) + Number(form.nb_heures || 1) * duree);
+  }, [estPrimaire, form.heure_fin, form.heure_debut, form.nb_heures, duree]);
 
   const enregistrer = async (e) => {
     e.preventDefault();
@@ -114,9 +178,10 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
       teacher_assignment_id: Number(form.teacher_assignment_id),
       jour_semaine: Number(form.jour_semaine),
       heure_debut: form.heure_debut,
-      nb_heures: Number(form.nb_heures),
       salle: form.salle.trim() || null,
     };
+    if (estPrimaire) payload.heure_fin = form.heure_fin;
+    else payload.nb_heures = Number(form.nb_heures);
     try {
       if (enEdition) await api.put(`${apiBase}/edt/${enEdition.id}`, payload);
       else await api.post(`${apiBase}/edt`, payload);
@@ -144,31 +209,28 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
     }
   };
 
-  const heureFin = useMemo(() => {
-    const [h, m] = String(form.heure_debut).split(':').map(Number);
-    const fin = h * 60 + (m || 0) + Number(form.nb_heures || 1) * 55;
-    return `${String(Math.floor(fin / 60)).padStart(2, '0')}:${String(fin % 60).padStart(2, '0')}`;
-  }, [form.heure_debut, form.nb_heures]);
-
-  // ---- Drag & drop : déplacement d'un créneau vers un autre jour/horaire ----
+  // ---- Drag & drop : déplacement vers un autre jour / horaire ----
   const onDragStart = (e, ev) => {
     e.dataTransfer.setData('text/plain', String(ev.id));
     e.dataTransfer.effectAllowed = 'move';
   };
-  const onDropSurJour = async (e, jour, deltaMinutes) => {
+  const onDropSurJour = async (e, jour, y) => {
     e.preventDefault();
     const id = Number(e.dataTransfer.getData('text/plain'));
     const creneau = creneaux.find((c) => c.id === id);
-    if (!creneau) return;
-    const debutTotal = HEURE_DEBUT_MIN + deltaMinutes;
-    const heureDebut = `${String(Math.floor(debutTotal / 60)).padStart(2, '0')}:${String(debutTotal % 60).padStart(2, '0')}`;
+    if (!creneau || estPrimaire) return;
+    const brut = heureDepuisY(segments, y, duree);
+    const liste = debutsPossibles(regles);
+    const heureDebut = liste.reduce((meilleur, candidat) => (
+      Math.abs(enMinutes(candidat) - enMinutes(brut)) < Math.abs(enMinutes(meilleur) - enMinutes(brut)) ? candidat : meilleur
+    ), liste[0] || brut);
     try {
       await api.put(`${apiBase}/edt/${id}`, {
         class_alias_id: creneau.class_alias_id,
         teacher_assignment_id: creneau.teacher_assignment_id,
         jour_semaine: jour,
         heure_debut: heureDebut,
-        nb_heures: creneau.nb_heures,
+        nb_heures: creneau.nb_heures || 1,
         salle: creneau.salle || null,
       });
       toast.succes('Créneau déplacé.');
@@ -178,10 +240,34 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
     }
   };
 
+  const imprimer = (portee) => {
+    if (!peutImprimer) return;
+    const aliasNom = aliases.find((a) => String(a.id) === String(aliasId))?.nom || '';
+    const classeNom = classesFiltrees.find((c) => String(c.id) === String(classeId))?.nom || '';
+    const cycleNom = cycles.find((c) => String(c.id) === String(cycleId))?.nom || '';
+    if (portee === 'alias' && aliasId) {
+      setApercu({ url: `${apiBase}/edt/pdf?class_alias_id=${aliasId}`, titre: `Emploi du temps — ${aliasNom}` });
+    } else if (portee === 'classe' && classeId) {
+      setApercu({ url: `${apiBase}/edt/pdf/classe?classe_id=${classeId}`, titre: `Emplois du temps — Classe ${classeNom}` });
+    } else if (portee === 'cycle' && cycleId) {
+      setApercu({ url: `${apiBase}/edt/pdf/cycle?cycle_id=${cycleId}`, titre: `Emplois du temps — Cycle ${cycleNom}` });
+    }
+  };
+
   return (
     <>
       <h1 className="page-titre">Emploi du temps{annee ? ` — ${annee.libelle}` : ''}</h1>
-      <p className="text-doux mb-4">Créneaux de 55 minutes (ou multiples). Déplacez-les par glisser-déposer, cliquez pour modifier. Les chevauchements sont refusés (même alias, même professeur ou même salle).</p>
+      <p className="text-doux mb-2">
+        Début {regles.debutJournee} · 1 h = {duree} min · pause {regles.pause.debut}–{regles.pause.fin} ·
+        {' '}matinée jusqu’à {regles.finMatin} · retour à {regles.debutApresMidi}–{regles.finApresMidi}.
+        {' '}Primaire : fin à {regles.finPrimaire}, durée libre.
+      </p>
+      <p className="text-doux mb-4">Déplacez les créneaux par glisser-déposer (collège / lycée), cliquez pour modifier. Les chevauchements et les créneaux hors horaires sont refusés.</p>
+
+      {estDirecteur && <FeuVertImpression type="edts" />}
+      {!estDirecteur && autorisationEdt === false && (
+        <div className="auth-erreur mb-4" role="alert">Le directeur n’a pas encore donné le feu vert pour l’impression des emplois du temps. Les boutons d’impression sont désactivés.</div>
+      )}
 
       {/* ===== Sélecteurs en cascade ===== */}
       <div className="flex gap-3 mb-4" style={{ flexWrap: 'wrap' }}>
@@ -200,12 +286,39 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
         {aliasId && <Button onClick={ouvrirCreation} style={{ alignSelf: 'flex-end' }}>+ Créneau</Button>}
       </div>
 
+      {erreur && !modalOuvert && <div className="auth-erreur mb-4" role="alert">{erreur}</div>}
       {chargement && <div className="spinner" />}
       {!aliasId && <Card><p className="text-doux">Choisissez un cycle, une classe puis un alias pour voir son emploi du temps.</p></Card>}
 
-      {aliasId && !chargement && (
-        <CalendrierDnd evenements={evenements} onEvenementClick={ouvrirEdition} onDropSurJour={onDropSurJour} onDragStart={onDragStart} />
+      {creneauxInvalides.length > 0 && (
+        <div className="mb-4" role="alert" style={{ background: '#fffbeb', border: '1px solid #f59e0b', color: '#92400e', borderRadius: 'var(--rayon-sm)', padding: '10px 12px', fontSize: 13 }}>
+          <strong>{creneauxInvalides.length} créneau(x) hors des horaires</strong> (pause, fin de matinée ou retour à 14h30).
+          Cliquez dessus pour corriger l’heure de début ou de fin.
+        </div>
       )}
+
+      {aliasId && !chargement && (
+        <Calendar
+          evenements={evenements}
+          config={config}
+          estPrimaire={estPrimaire}
+          onEvenementClick={ouvrirEdition}
+          onDragStart={estPrimaire ? undefined : onDragStart}
+          onDropSurJour={estPrimaire ? undefined : onDropSurJour}
+        />
+      )}
+
+      {/* ===== Impression ===== */}
+      <Card titre="Impression des emplois du temps" className="mt-6">
+        <p className="text-doux">PDF prêt à imprimer (A4 paysage, une page par alias) : grille Lundi → Vendredi, pause et horaires du cycle. Aperçu avant impression.</p>
+        <div className="flex gap-2 mt-4" style={{ flexWrap: 'wrap' }}>
+          <Button variant="secondary" disabled={!aliasId || !peutImprimer} onClick={() => imprimer('alias')}>Imprimer cet alias</Button>
+          <Button variant="secondary" disabled={!classeId || !peutImprimer} onClick={() => imprimer('classe')}>Imprimer la classe</Button>
+          <Button variant="secondary" disabled={!cycleId || !peutImprimer} onClick={() => imprimer('cycle')}>Imprimer le cycle</Button>
+        </div>
+      </Card>
+
+      {apercu && <ApercuPdf titre={apercu.titre} url={apercu.url} onFermer={() => setApercu(null)} />}
 
       {/* ===== Modal création / édition ===== */}
       {modalOuvert && (
@@ -228,79 +341,42 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
               <Select label="Jour" name="jour" value={form.jour_semaine} onChange={(e) => setForm({ ...form, jour_semaine: e.target.value })}>
                 {JOURS_LABEL.map((j, i) => <option key={j} value={i + 1}>{j.charAt(0).toUpperCase() + j.slice(1)}</option>)}
               </Select>
-              <Input label="Heure de début" name="heure_debut" type="time" value={form.heure_debut} onChange={(e) => setForm({ ...form, heure_debut: e.target.value })} required />
+              {estPrimaire ? (
+                <Input label="Début (libre)" name="heure_debut" type="time" value={form.heure_debut}
+                  onChange={(e) => setForm({ ...form, heure_debut: e.target.value })}
+                  min={regles.debutJournee} max={regles.pause.debut} required
+                  aide={`Avant la pause (${regles.pause.debut})`} />
+              ) : (
+                <Select label="Heure de début" name="heure_debut" value={form.heure_debut} onChange={(e) => setForm({ ...form, heure_debut: e.target.value })}>
+                  {debuts.map((h) => <option key={h} value={h}>{h}</option>)}
+                </Select>
+              )}
             </div>
-            <div className="grid-2 mt-4">
-              <Select label="Durée (× 55 min)" name="nb_heures" value={form.nb_heures} onChange={(e) => setForm({ ...form, nb_heures: e.target.value })}>
-                {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n} heure{n > 1 ? 's' : ''} de cours ({n * 55} min)</option>)}
-              </Select>
-              <Input label="Heure de fin (calculée)" name="heure_fin" value={heureFin} disabled />
-            </div>
+            {estPrimaire ? (
+              <>
+                <div className="grid-2 mt-4">
+                  <Input label="Fin (libre)" name="heure_fin" type="time" value={form.heure_fin}
+                    onChange={(e) => setForm({ ...form, heure_fin: e.target.value })}
+                    min={regles.pause.fin} max={regles.finPrimaire} required
+                    aide={`Après la pause, au plus tard ${regles.finPrimaire}`} />
+                  <Input label="Heure de fin" value={form.heure_fin} disabled />
+                </div>
+                <p className="text-doux" style={{ fontSize: 12 }}>
+                  Au primaire, la durée n’est pas fixée : saisissez directement l’heure de fin (avant {regles.finPrimaire}).
+                </p>
+              </>
+            ) : (
+              <div className="grid-2 mt-4">
+                <Select label={`Durée (× ${duree} min)`} name="nb_heures" value={form.nb_heures} onChange={(e) => setForm({ ...form, nb_heures: e.target.value })}>
+                  {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n} heure{n > 1 ? 's' : ''} ({n * duree} min)</option>)}
+                </Select>
+                <Input label="Heure de fin (calculée)" name="heure_fin" value={heureFin} disabled />
+              </div>
+            )}
             <div className="mt-4"><Input label="Salle (facultatif)" name="salle" value={form.salle} onChange={(e) => setForm({ ...form, salle: e.target.value })} placeholder="ex. A1" /></div>
           </form>
         </Modal>
       )}
     </>
-  );
-}
-
-/* ===== Calendrier avec glisser-déposer ===== */
-function CalendrierDnd({ evenements, onEvenementClick, onDropSurJour, onDragStart }) {
-  const JOURS = JOURS_DND;
-  const TRANCHES = [];
-  for (let t = HEURE_DEBUT_MIN; t < 19 * 60; t += 55) TRANCHES.push(t);
-  const HAUTEUR = 48;
-  const posFor = (ev) => {
-    const [h, m] = ev.heureDebut.split(':').map(Number);
-    const debut = h * 60 + (m || 0);
-    const [hf, mf] = ev.heureFin.split(':').map(Number);
-    const fin = hf * 60 + (mf || 0);
-    return { top: ((debut - HEURE_DEBUT_MIN) / 55) * HAUTEUR, height: Math.max(((fin - debut) / 55) * HAUTEUR, 18) };
-  };
-
-  return (
-    <div className="calendrier" role="grid" aria-label="Emploi du temps — vue semaine">
-      <div className="calendrier-grille">
-        <div className="calendrier-gouttiere">
-          <div className="calendrier-gouttiere-entete" style={{ height: 41 }} aria-hidden="true" />
-          {TRANCHES.map((t) => <div key={t} className="calendrier-gouttiere-heure">{String(Math.floor(t / 60)).padStart(2, '0')}:{String(t % 60).padStart(2, '0')}</div>)}
-        </div>
-        {JOURS.map((jour) => (
-          <div key={jour.numero} className="calendrier-jour" role="gridcell">
-            <div className="calendrier-jour-entete">{jour.label}</div>
-            <div
-              style={{ position: 'relative', height: TRANCHES.length * HAUTEUR }}
-              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-              onDrop={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const delta = Math.round((e.clientY - rect.top) / HAUTEUR) * 55;
-                onDropSurJour(e, jour.numero, Math.max(0, Math.min(delta, (TRANCHES.length - 1) * 55)));
-              }}
-            >
-              {TRANCHES.map((t) => <div key={t} className="calendrier-jour-fond" />)}
-              {evenements.filter((ev) => ev.jour === jour.numero).map((ev) => {
-                const { top, height } = posFor(ev);
-                return (
-                  <button
-                    key={ev.id}
-                    type="button"
-                    draggable
-                    onDragStart={(e) => onDragStart(e, ev)}
-                    onClick={() => onEvenementClick(ev)}
-                    className="evenement"
-                    style={{ top, height, cursor: 'grab', textAlign: 'left' }}
-                    title="Glisser-déposer pour déplacer"
-                  >
-                    <div>{ev.titre}</div>
-                    {ev.sousTitre && <div className="evenement-sous">{ev.sousTitre}</div>}
-                    <div className="evenement-sous">{ev.heureDebut} – {ev.heureFin}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
