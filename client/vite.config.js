@@ -1,8 +1,41 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      // Mise à jour automatique du service worker à chaque déploiement.
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'pwa/favicon-32.png', 'pwa/apple-touch-icon.png'],
+      manifest: {
+        name: 'School Vie — Gestion d’établissement scolaire',
+        short_name: 'School Vie',
+        description:
+          'School Vie — gestion complète d’un établissement scolaire : inscriptions, notes, paiements, emploi du temps.',
+        lang: 'fr',
+        theme_color: '#1f2766',
+        background_color: '#161c44',
+        display: 'standalone',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          { src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/pwa/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/pwa/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        // L'app shell est précaché (installable + ouverture hors-ligne) ;
+        // les données de l'API ne sont JAMAIS mises en cache (fiches élèves, notes…).
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,ico,webmanifest}'],
+        runtimeCaching: [],
+      },
+    }),
+  ],
   server: {
     port: 5173,
     // Proxy de secours : le front appelle VITE_API_URL directement (CORS est

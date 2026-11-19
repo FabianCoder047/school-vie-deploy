@@ -54,6 +54,10 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
     }
+    if (status === 503 && error.response?.data?.code === 'MAINTENANCE' && typeof window !== 'undefined') {
+      // Le MaintenanceProvider écoute cet évènement et bascule sur la page de maintenance.
+      window.dispatchEvent(new Event('school-vie:maintenance'));
+    }
     return Promise.reject(error);
   }
 );

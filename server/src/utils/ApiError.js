@@ -12,6 +12,9 @@ class ApiError extends Error {
   static notFound(msg = 'Ressource introuvable.', code) { return new ApiError(404, msg, code); }
   static conflict(msg, code) { return new ApiError(409, msg, code); }
   static locked(msg, code) { return new ApiError(423, msg, code); }
+  static serviceUnavailable(msg = 'Service temporairement indisponible.', code = 'SERVICE_UNAVAILABLE') {
+    return new ApiError(503, msg, code);
+  }
 }
 
 module.exports = { ApiError };

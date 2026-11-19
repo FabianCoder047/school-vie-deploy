@@ -393,9 +393,55 @@
 .topbar-espace img { width: 36px; height: 36px; object-fit: contain; border-radius: var(--rayon-sm); }
 .topbar-droite { display: flex; align-items: center; gap: var(--espace-3); }
 
-.contenu { padding: var(--espace-5); flex: 1; }
+.contenu { padding: var(--espace-5); flex: 1; min-width: 0; overflow-x: hidden; }
 .page-titre { font-size: 21px; font-weight: 800; color: var(--gris-900); margin-bottom: var(--espace-4); }
 .page-actions { display: flex; gap: var(--espace-2); align-items: center; }
+
+/* --- Filtres fluides partagés (pages outil : notes, appel, fiches) --- */
+.filtres-outil { display: flex; gap: var(--espace-3); flex-wrap: wrap; align-items: flex-end; }
+.select-fluide { flex: 1 1 170px; min-width: 150px; }
+.select-fluide select, .select-fluide .select { width: 100%; }
+
+/* --- Tableau : cellules et colonnes masquées sur petit écran --- */
+@media (max-width: 720px) {
+  .tableau.masquable-matricule .col-matricule { display: none; }
+  .tableau { font-size: 12.5px; }
+  .tableau thead th, .tableau tbody td { padding: 7px 6px; }
+}
+
+/* --- Pied de page des outils (boutons) : pleine largeur sur téléphone --- */
+.boutons-pied { display: flex; gap: var(--espace-3); }
+@media (max-width: 640px) {
+  .boutons-pied { width: 100%; }
+  .boutons-pied .btn { flex: 1 1 auto; }
+}
+
+/* --- Onglets défilables au lieu de se compresser --- */
+.tabs { overflow-x: auto; flex-wrap: nowrap; }
+.tabs .tab { white-space: nowrap; }
+
+/* ===== Menu latéral masquable (bouton burger, tous espaces) ===== */
+.sidebar { transition: transform .25s ease, opacity .25s ease, visibility .25s ease; }
+.zone-principale { transition: margin-left .25s ease, padding-bottom .25s ease; }
+.topbar-menu-bouton {
+  position: relative; background: var(--gris-100); border: none; cursor: pointer;
+  width: 40px; height: 40px; border-radius: var(--rayon-md); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; color: var(--gris-700);
+  transition: background var(--transition), color var(--transition);
+}
+.topbar-menu-bouton:hover { background: var(--gris-200); color: var(--gris-900); }
+.topbar-menu-bouton:focus-visible { outline: 2px solid var(--bleu-400); outline-offset: 2px; }
+
+/* Desktop (> 992px) : masquer la sidebar libère toute la largeur */
+@media (min-width: 993px) {
+  .menu-masque .sidebar { transform: translateX(-110%); opacity: 0; pointer-events: none; visibility: hidden; }
+  .menu-masque .zone-principale { margin-left: 0; }
+}
+/* Mobile / tablette (≤ 992px) : masquer la barre flottante du bas */
+@media (max-width: 992px) {
+  .menu-masque .sidebar { transform: translateY(130%); opacity: 0; pointer-events: none; visibility: hidden; }
+  .menu-masque .zone-principale { padding-bottom: 0; }
+}
 
 /* ===== Pad de signature (directeur) ===== */
 .signature-pad {

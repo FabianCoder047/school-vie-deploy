@@ -11,7 +11,9 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const request = require('supertest');
 
-process.env.DB_NAME = 'school_vie_test_db_004774';
+// Base jetable par défaut ; un test peut surcharger via TEST_DB_NAME
+// (utile pour les suites d'intégration exécutées en parallèle).
+process.env.DB_NAME = process.env.TEST_DB_NAME || 'school_vie_test_db_004774';
 process.env.ADMIN_EMAIL = 'admin@test.local';
 process.env.ADMIN_PASSWORD = 'AdminTest2026!';
 process.env.ADMIN_NOM = 'AdminTest';

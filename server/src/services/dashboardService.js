@@ -66,6 +66,7 @@ async function dashboardDirecteur() {
   let recouvrement = 0;
   let absencesMois = 0;
   let retardsMois = 0;
+  let absencesJustifieesMois = 0;
   let eleves = 0;
   if (anneeCourante) {
     const [[{ attendu, encaisse }]] = await pool.query(
@@ -78,14 +79,16 @@ async function dashboardDirecteur() {
     const attenduN = Number(attendu);
     recouvrement = attenduN > 0 ? Math.round((Number(encaisse) / attenduN) * 1000) / 10 : 0;
 
-    const [[{ abs, ret }]] = await pool.query(
-      `SELECT SUM(ar.statut = 'ABSENT') AS abs, SUM(ar.statut = 'RETARD') AS ret
+    const [[{ abs, ret, absJust }]] = await pool.query(
+      `SELECT SUM(ar.statut = 'ABSENT') AS abs, SUM(ar.statut = 'RETARD') AS ret,
+              SUM(ar.statut = 'ABSENT' AND ar.justification_statut = 'JUSTIFIEE') AS absJust
          FROM attendance_records ar
          JOIN attendance_sessions ats ON ats.id = ar.session_id
         WHERE ats.date_cours >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`
     );
     absencesMois = Number(abs || 0);
     retardsMois = Number(ret || 0);
+    absencesJustifieesMois = Number(absJust || 0);
     eleves = await countTable('enrollments', "academic_year_id = ? AND statut <> 'ANNULE'", [anneeCourante.id]);
   }
   return {
@@ -98,6 +101,8 @@ async function dashboardDirecteur() {
     eleves,
     recouvrement,
     absencesMois,
+    absencesJustifieesMois,
+    absencesNonJustifieesMois: absencesMois - absencesJustifieesMois,
     retardsMois,
     anneeCourante: anneeCourante?.libelle || null,
     utilisateursParRole: [

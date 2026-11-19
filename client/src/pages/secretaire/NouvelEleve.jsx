@@ -11,7 +11,7 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
-import ApercuPdf from '../../components/ApercuPdf';
+import UploadPreuveRecu from '../../components/UploadPreuveRecu';
 
 const ETAPES = ['Élève', 'Scolarité', 'Tuteur', 'Récapitulatif'];
 const MOYEN_LIB = { ESPECES: 'Espèces', FLOOZ: 'Flooz', MIXX_BY_YAS: 'Mixx By Yas' };
@@ -43,7 +43,7 @@ export default function NouvelElevePage() {
   const [paiementEnCours, setPaiementEnCours] = useState(false);
   const [paiementErreur, setPaiementErreur] = useState('');
   const [recuId, setRecuId] = useState(null);
-  const [apercuPdf, setApercuPdf] = useState(null); // { url, titre }
+  const [preuve, setPreuve] = useState(null);
 
   useEffect(() => {
     api.get('/secretaire/classes-pour-inscription')
@@ -143,8 +143,9 @@ export default function NouvelElevePage() {
         reference_transaction: paiement.reference_transaction.trim() || null,
       });
       setRecuId(data.paiement?.id || null);
+      setPreuve(data.paiement?.justificatif_chemin ?? null);
       setModalPaiement(false);
-      toast.succes('Paiement d’inscription enregistré. Reçu disponible.');
+      toast.succes('Paiement d’inscription enregistré.');
     } catch (err) {
       setPaiementErreur(messageErreur(err, 'Paiement impossible.'));
     } finally {
@@ -164,6 +165,7 @@ export default function NouvelElevePage() {
     setCycleId(''); setClassId(''); setAliasId(''); setModalite('');
     setTuteur({ nom: '', prenom: '', telephone_whatsapp: '', email: '' });
     setRecuId(null);
+    setPreuve(null);
     setPaiement({ moyen: 'ESPECES', reference_transaction: '' });
   };
 
@@ -207,7 +209,10 @@ export default function NouvelElevePage() {
 
           <div className="flex gap-3 mt-6" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
             {recuId ? (
-              <Button variant="success" onClick={() => setApercuPdf({ url: `/secretaire/paiements/${recuId}/recu`, titre: `Reçu d’inscription — ${eleve.prenom} ${eleve.nom}` })}>Aperçu du reçu d’inscription</Button>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                <p className="text-doux" style={{ fontSize: 13 }}>Remettez le reçu rempli à la main. Pour preuve, joignez son scan ci-dessous (« en cas de quoi »).</p>
+                <UploadPreuveRecu base="/secretaire" paymentId={recuId} preuve={preuve} onChange={setPreuve} />
+              </div>
             ) : (
               <Button onClick={() => setModalPaiement(true)}>Marquer le paiement d’inscription</Button>
             )}
@@ -240,8 +245,6 @@ export default function NouvelElevePage() {
           </div>
         )}
 
-        {/* Aperçu du reçu dans l'application */}
-        {apercuPdf && <ApercuPdf titre={apercuPdf.titre} url={apercuPdf.url} onFermer={() => setApercuPdf(null)} />}
       </>
     );
   }

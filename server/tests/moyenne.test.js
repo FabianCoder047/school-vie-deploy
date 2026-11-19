@@ -80,8 +80,17 @@ test('noteOuNull : espaces et virgules', () => {
 test('moyenne simple et appréciation', () => {
   assert.equal(moyenne([10, 20]), 15);
   assert.equal(moyenne([null, null]), null);
-  assert.equal(appreciation(17), 'Excellent');
-  assert.equal(appreciation(13), 'Bien');
-  assert.equal(appreciation(5), 'Très faible');
+  assert.equal(appreciation(17), 'Très bien');
+  assert.equal(appreciation(14), 'Bien');
+  assert.equal(appreciation(15.9), 'Bien');
+  assert.equal(appreciation(13), 'Assez bien');
+  assert.equal(appreciation(12), 'Assez bien');
+  assert.equal(appreciation(11.9), 'Passable');
+  assert.equal(appreciation(10), 'Passable');
+  assert.equal(appreciation(9), 'Insuffisant');
+  assert.equal(appreciation(8), 'Insuffisant');
+  assert.equal(appreciation(6), 'Faible');
+  assert.equal(appreciation(5), 'Médiocre');
+  assert.equal(appreciation(0), 'Médiocre');
   assert.equal(appreciation(null), null);
 });

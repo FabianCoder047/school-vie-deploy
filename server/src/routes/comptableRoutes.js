@@ -9,7 +9,13 @@ const router = express.Router();
 /* Paiements de scolarité */
 router.post('/paiements', validate(paiementScolariteSchema), controleur.payerScolarite);
 router.post('/paiements/:paymentId/annuler', validate(annulationPaiementSchema), controleur.annulerPaiement);
-router.get('/paiements/:paymentId/recu', controleur.recuPaiement);
+/* Preuve (scan/PDF) du reçu de paiement rempli à la main — « en cas de quoi » */
+const justificatif = require('../controllers/justificatifController');
+const { uploadJustificatif, multerErrorHandler } = require('../middlewares/upload');
+router.post('/paiements/:paymentId/justificatif', (req, res, next) => {
+  uploadJustificatif.single('justificatif')(req, res, (err) => (err ? multerErrorHandler(err, req, res, next) : next()));
+}, justificatif.poser);
+router.delete('/paiements/:paymentId/justificatif', justificatif.retirer);
 
 /* Comptes de scolarité */
 router.get('/comptes', controleur.listerComptes);
@@ -22,6 +28,10 @@ router.get('/fiches-retard/pdf', controleur.fichesRetardPdf);
 /* Relances parents */
 router.post('/relances', validate(relanceSchema), controleur.relancer);
 router.get('/relances/historique', controleur.historiqueRelances);
+
+/* Liste de renvoi (classe, échéances arrêtées à une date) — aperçu JSON + PDF */
+router.get('/liste-renvoi', controleur.listeRenvoiJson);
+router.get('/liste-renvoi/pdf', controleur.listeRenvoiPdf);
 
 /* Rapports comptables */
 router.get('/rapports', controleur.rapportJson);

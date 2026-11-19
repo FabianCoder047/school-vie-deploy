@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api, { messageErreur } from '../../api/axios';
+import { appreciation } from '../../utils/appreciation';
 import { useToast } from '../../hooks/useToast';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
@@ -36,7 +37,7 @@ export default function SaisieNotesPage() {
   const [classSubjectId, setClassSubjectId] = useState('');
   const [periodeId, setPeriodeId] = useState('');
   const [feuille, setFeuille] = useState(null);
-  const [valeurs, setValeurs] = useState({});      // enrollmentId -> {interro, devoir, compo, appreciation}
+  const [valeurs, setValeurs] = useState({});      // enrollmentId -> {interro, devoir, compo}
   const [initiales, setInitiales] = useState({});  // pour surligner les modifiées
   const [chargement, setChargement] = useState(false);
   const [envoi, setEnvoi] = useState(false);
@@ -79,7 +80,6 @@ export default function SaisieNotesPage() {
             interro: l.interro != null ? String(l.interro) : '',
             devoir: l.devoir != null ? String(l.devoir) : '',
             compo: l.compo != null ? String(l.compo) : '',
-            appreciation: l.appreciation || '',
           };
           init[l.enrollment_id] = { ...vals[l.enrollment_id] };
         }
@@ -98,7 +98,7 @@ export default function SaisieNotesPage() {
     const modifiees = new Set();
     for (const [id, v] of Object.entries(valeurs)) {
       const init = initiales[id] || {};
-      for (const c of [...COLS, 'appreciation']) {
+      for (const c of COLS) {
         if ((v[c] ?? '') !== (init[c] ?? '')) modifiees.add(`${id}:${c}`);
       }
     }
@@ -136,11 +136,11 @@ export default function SaisieNotesPage() {
     setEnvoi(true);
     try {
       const notes = feuille.lignes
-        .filter((l) => [...COLS, 'appreciation'].some((c) => (valeurs[l.enrollment_id]?.[c] ?? '') !== (initiales[l.enrollment_id]?.[c] ?? '')))
+        .filter((l) => COLS.some((c) => (valeurs[l.enrollment_id]?.[c] ?? '') !== (initiales[l.enrollment_id]?.[c] ?? '')))
         .map((l) => {
           const v = valeurs[l.enrollment_id];
           const norme = (x) => (x === '' || x == null ? null : Number(String(x).replace(',', '.')));
-          return { enrollment_id: l.enrollment_id, interro: norme(v.interro), devoir: norme(v.devoir), compo: norme(v.compo), appreciation: v.appreciation?.trim() || null };
+          return { enrollment_id: l.enrollment_id, interro: norme(v.interro), devoir: norme(v.devoir), compo: norme(v.compo) };
         });
       if (notes.length === 0) { toast.info('Aucune modification à enregistrer.'); return; }
       if (notes.some((n) => [n.interro, n.devoir, n.compo].some((x) => x !== null && (Number.isNaN(x) || x < 0 || x > 20)))) {
@@ -166,16 +166,16 @@ export default function SaisieNotesPage() {
       <h1 className="page-titre">Saisie des notes</h1>
 
       {/* ===== Sélecteurs ===== */}
-      <div className="flex gap-3 mb-4" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <Select label="Classe / Alias" name="alias" value={aliasId} onChange={(e) => setAliasId(e.target.value)} style={{ minWidth: 180 }}>
+      <div className="filtres-outil mb-4">
+        <Select label="Classe / Alias" name="alias" className="select-fluide" value={aliasId} onChange={(e) => setAliasId(e.target.value)}>
           <option value="">— Choisir —</option>
           {mesClasses.classes.map((c) => <option key={c.alias_id} value={c.alias_id}>{c.classe_nom} · {c.alias_nom}</option>)}
         </Select>
-        <Select label="Matière" name="matiere" value={classSubjectId} onChange={(e) => setClassSubjectId(e.target.value)} style={{ minWidth: 200 }}>
+        <Select label="Matière" name="matiere" className="select-fluide" value={classSubjectId} onChange={(e) => setClassSubjectId(e.target.value)}>
           <option value="">— Choisir —</option>
           {matieresPourAlias.map((m) => <option key={m.class_subject_id} value={m.class_subject_id}>{m.matiere_nom}</option>)}
         </Select>
-        <Select label="Période" name="periode" value={periodeId} onChange={(e) => setPeriodeId(e.target.value)} style={{ minWidth: 200 }}>
+        <Select label="Période" name="periode" className="select-fluide" value={periodeId} onChange={(e) => setPeriodeId(e.target.value)}>
           <option value="">— Choisir —</option>
           {periodes.map((p) => <option key={p.id} value={p.id}>{p.libelle}{p.fenetre?.ouverte ? ' (ouverte)' : ' (fermée)'}</option>)}
         </Select>
@@ -202,22 +202,22 @@ export default function SaisieNotesPage() {
       ) : (
         <>
           <div className="table-conteneur" style={{ maxHeight: '62vh' }}>
-            <table className="tableau" style={{ minWidth: 760 }}>
+            <table className="tableau masquable-matricule" style={{ minWidth: 640 }}>
               <thead>
                 <tr>
-                  <th>Matricule</th><th>Nom</th><th>Prénom</th>
+                  <th className="col-matricule">Matricule</th><th>Nom</th><th>Prénom</th>
                   <th style={{ width: 90 }}>Interro /20</th><th style={{ width: 90 }}>Devoir /20</th><th style={{ width: 90 }}>Compo /20</th>
-                  <th style={{ width: 90 }}>Moyenne</th><th>Appréciation</th>
+                  <th style={{ width: 90 }}>Moyenne</th><th style={{ width: 110 }}>Appréciation <span style={{ fontWeight: 400 }}>(auto)</span></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((l, rowIndex) => {
                   const v = valeurs[l.enrollment_id] || {};
                   const moyenne = moyenneLigne(v);
-                  const ligneModifiee = [...COLS, 'appreciation'].some((c) => (valeurs[l.enrollment_id]?.[c] ?? '') !== (initiales[l.enrollment_id]?.[c] ?? ''));
+                  const ligneModifiee = COLS.some((c) => (valeurs[l.enrollment_id]?.[c] ?? '') !== (initiales[l.enrollment_id]?.[c] ?? ''));
                   return (
                     <tr key={l.enrollment_id} style={ligneModifiee ? { background: 'var(--jaune-50)' } : undefined}>
-                      <td><code style={{ fontSize: 12 }}>{l.matricule}</code></td>
+                      <td className="col-matricule"><code style={{ fontSize: 12 }}>{l.matricule}</code></td>
                       <td><strong>{l.nom}</strong></td>
                       <td>{l.prenom}</td>
                       {COLS.map((col, colIndex) => {
@@ -250,18 +250,10 @@ export default function SaisieNotesPage() {
                       <td style={{ textAlign: 'center', fontWeight: 800, color: moyenne !== null ? (moyenne >= 10 ? 'var(--vert-700)' : 'var(--rouge-700)') : 'var(--gris-400)' }}>
                         {moyenne !== null ? moyenne.toFixed(2) : '—'}
                       </td>
-                      <td style={{ padding: '4px 6px' }}>
-                        <input
-                          ref={(el) => { inputsRef.current[`${l.enrollment_id}:appreciation`] = el; }}
-                          type="text"
-                          maxLength={255}
-                          disabled={!modifiable}
-                          value={v.appreciation ?? ''}
-                          onChange={(e) => setCellule(l.enrollment_id, 'appreciation', e.target.value)}
-                          placeholder="Appréciation…"
-                          aria-label={`Appréciation de ${l.prenom} ${l.nom}`}
-                          style={{ width: '100%', padding: '7px 8px', border: `1px solid ${cellulesModifiees.has(`${l.enrollment_id}:appreciation`) ? 'var(--jaune-500)' : 'var(--bordure)'}`, borderRadius: 'var(--rayon-sm)', background: cellulesModifiees.has(`${l.enrollment_id}:appreciation`) ? '#fffbeb' : '#fff' }}
-                        />
+                      <td style={{ textAlign: 'center' }}>
+                        {moyenne !== null
+                          ? <span style={{ fontSize: 12, color: 'var(--texte-doux)' }}>{appreciation(moyenne)}</span>
+                          : <span style={{ color: 'var(--gris-400)' }}>—</span>}
                       </td>
                     </tr>
                   );
@@ -271,7 +263,7 @@ export default function SaisieNotesPage() {
           </div>
           <div className="flex-between mt-4" style={{ flexWrap: 'wrap', gap: 12 }}>
             <span className="text-doux" style={{ fontSize: 13 }}>{cellulesModifiees.size} cellule(s) modifiée(s) non enregistrée(s) — moyenne de ligne en direct, navigation clavier ↑ ↓ Entrée.</span>
-            <div className="flex gap-3">
+            <div className="boutons-pied">
               <Button variant="secondary" onClick={chargerFeuille} disabled={chargement}>Recharger</Button>
               <Button onClick={enregistrer} disabled={envoi || !modifiable || cellulesModifiees.size === 0}>
                 {envoi ? 'Enregistrement…' : `Enregistrer (${cellulesModifiees.size})`}

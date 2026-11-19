@@ -35,7 +35,6 @@ const feuilleNotesSchema = z.object({
     interro: noteValeur,
     devoir: noteValeur,
     compo: noteValeur,
-    appreciation: z.string().max(255).optional().nullable(),
   })).min(1, 'La feuille est vide.'),
 });
 
@@ -48,7 +47,8 @@ const appelSchema = z.object({
     enrollment_id: z.coerce.number().int().positive(),
     statut: z.enum(['PRESENT', 'ABSENT', 'RETARD'], { errorMap: () => ({ message: 'Statut invalide (PRESENT, ABSENT ou RETARD).' }) }),
     minutes_retard: z.coerce.number().int().positive('Minutes de retard > 0.').max(240).optional().nullable(),
-    justification: z.string().trim().max(255).optional().nullable(),
+    justification_statut: z.enum(['NON_JUSTIFIEE', 'JUSTIFIEE']).optional().nullable(),
+    justification_note: z.string().trim().max(500).optional().nullable(),
   })).min(1, 'Aucun élève dans l’appel.'),
 });
 

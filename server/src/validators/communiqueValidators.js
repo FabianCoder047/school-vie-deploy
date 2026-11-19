@@ -3,7 +3,7 @@ const { z } = require('zod');
 
 const cibleSchema = z.discriminatedUnion('target_type', [
   z.object({ target_type: z.literal('TOUS') }),
-  z.object({ target_type: z.literal('ROLE'), role: z.enum(['SECRETAIRE', 'COMPTABLE', 'PROFESSEUR', 'PARENT']) }),
+  z.object({ target_type: z.literal('ROLE'), role: z.enum(['ADMIN', 'DIRECTEUR', 'SECRETAIRE', 'COMPTABLE', 'PROFESSEUR', 'PARENT']) }),
   z.object({ target_type: z.literal('CYCLE'), cycle_id: z.coerce.number().int().positive() }),
   z.object({ target_type: z.literal('CLASSE'), class_id: z.coerce.number().int().positive() }),
   z.object({ target_type: z.literal('ALIAS'), class_alias_id: z.coerce.number().int().positive() }),

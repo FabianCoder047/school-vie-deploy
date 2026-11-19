@@ -4,7 +4,7 @@ import {
   IconDashboard, IconUsers, IconBook, IconLayers, IconGrid, IconSubject,
   IconCalendar, IconClock, IconCash, IconBell, IconShield, IconCard,
   IconChart, IconSave, IconHome, IconStudent, IconReceipt, IconAlert,
-  IconMessage, IconNote, IconUser,
+  IconMessage, IconNote, IconUser, IconMaintenance,
 } from './sidebarIcons';
 
 export const SIDEBAR_MENUS = {
@@ -18,6 +18,9 @@ export const SIDEBAR_MENUS = {
     { section: 'Comptes' },
     { label: 'Directeurs', to: '/admin/directeurs', icone: IconShield },
     { label: 'Sauvegardes', to: '/admin/sauvegardes', icone: IconSave },
+    { label: 'Journal d’activités', to: '/admin/journal', icone: IconClock },
+    { label: 'Maintenance', to: '/admin/maintenance', icone: IconMaintenance },
+    { label: 'Communiqués', to: '/communiques', icone: IconMessage },
     { label: 'Mon profil', to: '/profil', icone: IconUser },
   ],
   DIRECTEUR: [
@@ -31,6 +34,7 @@ export const SIDEBAR_MENUS = {
     { label: 'Frais de scolarité', to: '/directeur/frais', icone: IconCash },
     { label: 'Périodes de saisie', to: '/directeur/periodes', icone: IconClock },
     { label: 'Emploi du temps', to: '/directeur/edt', icone: IconCalendar },
+    { label: 'Statistiques présences', to: '/directeur/statistiques-presences', icone: IconChart },
     { section: 'Documents' },
     { label: 'Cartes scolaires', to: '/directeur/cartes', icone: IconCard },
     { label: 'Bulletins', to: '/directeur/bulletins', icone: IconNote },
@@ -44,6 +48,12 @@ export const SIDEBAR_MENUS = {
     { section: 'Inscriptions' },
     { label: 'Nouvel élève', to: '/secretaire/nouvel-eleve', icone: IconStudent },
     { label: 'Élèves & fiches', to: '/secretaire/eleves', icone: IconUsers },
+    { label: 'Statistiques présences', to: '/secretaire/statistiques-presences', icone: IconChart },
+    { section: 'Documents' },
+    { label: 'Emploi du temps', to: '/secretaire/edt', icone: IconCalendar },
+    { label: 'Cartes scolaires', to: '/secretaire/cartes', icone: IconCard },
+    { label: 'Bulletins', to: '/secretaire/bulletins', icone: IconNote },
+    { label: 'Communiqués', to: '/secretaire/communiques', icone: IconMessage },
     { label: 'Mon profil', to: '/profil', icone: IconUser },
   ],
   COMPTABLE: [
@@ -53,6 +63,8 @@ export const SIDEBAR_MENUS = {
     { label: 'Comptes de scolarité', to: '/comptable/comptes', icone: IconBook },
     { label: 'Relances parents', to: '/comptable/relances', icone: IconBell },
     { label: 'Rapports comptables', to: '/comptable/rapports', icone: IconChart },
+    { label: 'Liste de renvoi', to: '/comptable/liste-renvoi', icone: IconReceipt },
+    { label: 'Communiqués', to: '/communiques', icone: IconMessage },
     { label: 'Mon profil', to: '/profil', icone: IconUser },
   ],
   PROFESSEUR: [
@@ -60,15 +72,19 @@ export const SIDEBAR_MENUS = {
     { section: 'Pédagogie' },
     { label: 'Saisie des notes', to: '/professeur/notes', icone: IconNote },
     { label: 'Appel', to: '/professeur/appel', icone: IconUsers },
+    { label: 'Absences de mes élèves', to: '/professeur/absences-eleves', icone: IconAlert },
     { label: 'Mon emploi du temps', to: '/professeur/edt', icone: IconCalendar },
+    { label: 'Communiqués', to: '/communiques', icone: IconMessage },
     { label: 'Mon profil', to: '/profil', icone: IconUser },
   ],
   PARENT: [
     { label: 'Tableau de bord', to: '/parent', icone: IconDashboard },
     { section: 'Scolarité de mes enfants' },
     { label: 'Notes & bulletins', to: '/parent/notes', icone: IconNote },
+    { label: 'Absences & motifs', to: '/parent/absences', icone: IconAlert },
     { label: 'Emploi du temps', to: '/parent/edt', icone: IconCalendar },
     { label: 'Situation financière', to: '/parent/finance', icone: IconCash },
+    { label: 'Communiqués', to: '/communiques', icone: IconMessage },
     { label: 'Mon profil', to: '/profil', icone: IconUser },
   ],
 };

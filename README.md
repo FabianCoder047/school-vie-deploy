@@ -94,6 +94,39 @@ Voir `server/.env.example`. Points clés :
 
 Le front n'a qu'une variable : `VITE_API_URL` (défaut `http://localhost:5000/api`).
 
+## Tests manuels — Sprint 6
+
+```bash
+# 1. Comptable → Liste de renvoi : choisir CE1 (8 élèves démo) + une date
+#    d'arrêt → Prévisualiser : effectif/à jour/à renvoyer, lignes à renvoyer
+#    teintées, totaux ; « Aperçu / Imprimer (PDF) » : PDF au modèle demandé
+#    (entête école, LISTE DE RENVOI, signatures LE COMPTABLE / LE DIRECTEUR ;
+#    ligne rouge = élèves à renvoyer ; note « prévisionnelle » si la date
+#    d'arrêt est dans le futur). Arrêt au 18/11/2026 → À jour : 3, À renvoyer : 5.
+# 2. Secrétaire → Emploi du temps / Cartes scolaires / Bulletins / Communiqués :
+#    les écrans sont les mêmes que ceux du Directeur (mêmes règles API).
+#    - Cartes & bulletins : Tant que le feu vert n'est pas donné → bandeau
+#      « Le directeur n'a pas encore donné le feu vert … » + boutons désactivés
+#      (API : 403 IMPRESSION_NON_AUTORISEE).
+#    - Directeur → Cartes/Bulletins : carte « Feu vert secrétaire » → donner /
+#      révoquer. La secrétaire reçoit une notification (cloche) à chaque bascule.
+#    - Directeur continue d'imprimer librement.
+# 3. Admin → Journal d'activités : toutes les activités (connexion incluse) sont
+#    consultables — recherche par auteur, filtres action / entité / période,
+#    pagination, détail (avant/après JSON). Générer un PDF (liste de renvoi,
+#    bulletins…) y crée une ligne (LISTE_RENVOI, GENERATE_BULLETINS…).
+# 4. Communiqués : chaque espace (Admin, Directeur, Secrétaire, Comptable,
+#    Professeur, Parent) a l'onglet Communiqués. Le Directeur/Secrétaire/Admin
+#    voient tout ; les autres voient les communiqués qui les concernent
+#    (TOUS + rôle + portée de leurs classes / élèves). Publication : Directeur
+#    et Secrétaire.
+# 5. Absences/retards : le professeur enregistre l'appel → chaque nouveau
+#    absent/retardataire déclenche une notification interne (cloche + espace
+#    Parent → Absences & motifs) + une modale « Notifier les parents par
+#    WhatsApp » avec un lien wa.me pré-rempli par tuteur (envoi manuel).
+#    Rejouer le même appel ne re-propose rien.
+```
+
 ## Tests manuels — Sprint 5
 
 ```bash
@@ -219,10 +252,11 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
 |---|---|---|
 | 0 | Fondations, auth complète, design system, 6 dashboards vides | ✅ Livré |
 | 1 | Espace Admin (cycles/classes/matières/années/directeurs/paramètres) + Espace Directeur (utilisateurs, alias, affectations matière↔classe/coefficient, affectation professeur) | ✅ Livré |
-| 2 | Inscriptions + comptabilité (frais & modalités, inscription élève + matricule + échéancier, compte Parent auto, paiement d'inscription, reçus PDF à la volée, paiements scolarité + ventilation, comptes/fiches de retard/relances/rapports) | ✅ Livré |
+| 2 | Inscriptions + comptabilité (frais & modalités, inscription élève + matricule + échéancier, compte Parent auto, paiement d'inscription, paiements scolarité + ventilation, comptes/fiches de retard/relances/rapports) — le reçu (inscription ou paiement) n'est PAS généré : il se remplit à la main et le scan peut être joint comme preuve (justificatif) | ✅ Livré |
 | 3 | Espace Professeur + périodes de saisie : périodes d'évaluation + fenêtre de saisie stricte (API+UI), emploi du temps 55 min avec détection des chevauchements (alias/prof/salle) et glisser-déposer, saisie Excel des notes (clavier, moyenne instantanée, verrouillage), appel présents/absents/retard (notification parents) | ✅ Livré |
-| 4 | Documents PDF (cartes 8/page avec QR, bulletins avec rang et moyenne de classe, jamais stockés), communiqués ciblés (tous/rôle/cycle/classe/alias), notifications réelles (badge/cloche), espace Parent (notes, EDT, situation financière — consultation lecture seule) | ✅ Livré |
+| 4 | Documents PDF (cartes 8/page avec QR, bulletins modèle togolais — une page A4 par élève, rangs 1er/2ème par matière et général, résultats de tous les trimestres, jamais stockés), communiqués ciblés (tous/rôle/cycle/classe/alias), notifications réelles (badge/cloche), espace Parent (notes, EDT, situation financière — consultation lecture seule) | ✅ Livré |
 | 5 | Sauvegardes par année académique sous l'Administrateur + KPI sur tous les dashboards + revue sécurité + 28 tests automatisés + déploiement + gestion du profil (`/profil`) | ✅ Livré |
+| 6 | Liste de renvoi (Comptable, classe entière, PDF signatures Comptable/Directeur) ; Emploi du temps / Cartes / Bulletins / Communiqués accessibles à la Secrétaire (bulletins & cartes protégés par le **feu vert** du Directeur) ; onglet Journal d'activités (Admin — toutes les activités de tout le monde) ; onglet Communiqués dans tous les espaces | ✅ Livré |
 
 ## Décisions & limites documentées
 
@@ -321,12 +355,24 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
 
 ### Décisions & limites — Sprint 3
 
-- **Moyennes** : service unique `moyenneService.js` — testé (12 cas, `npm test`).
+- **Moyennes** : service unique `moyenneService.js` — testé (`npm test`).
   `(moyenne(interro, devoir) + compo) / 2`, valeurs manquantes ignorées, jamais
   comptées comme 0 ; moyenne générale pondérée par coefficient, arrondie à 2 déc.
-- **Fenêtre de saisie** : `evaluation_periods.saisie_debut/saisie_fin` (NULL =
-  pas de borne). Toute écriture hors fenêtre → 403 `SAISIE_FERMEE` (API) + UI
-  verrouillée. Lecture toujours possible, écriture strictement fenêtrée.
+- **Appréciation automatique, non modifiable** : la colonne « Appréciation » du
+  bulletin est **toujours calculée** à partir de la moyenne de la matière
+  (16–20 Très bien · 14–15 Bien · 12–13 Assez bien · 10–11 Passable ·
+  8–9 Insuffisant · 6–7 Faible · 0–5 Médiocre). Le professeur ne peut pas la
+  saisir (champ supprimé dans « Saisie des notes », ignoré côté API —
+  migration `005` neutralise les anciennes valeurs).
+- **Fenêtre de saisie** : `evaluation_periods.saisie_debut/saisie_fin`.
+  **Une seule période peut être ouverte à la fois** : les fenêtres ne peuvent
+  pas se chevaucher (validation serveur à la création/modification, erreur
+  `409 SAISIE_DEJA_OUVERTE`) ; une période sans fenêtre définie est **fermée
+  par défaut** (le Directeur ouvre la saisie explicitement). Toute écriture
+  hors fenêtre → 403 `SAISIE_FERMEE` (API) + UI verrouillée. Lecture toujours
+  possible, écriture strictement fenêtrée. Une période sans fenêtre est fermée
+  par défaut ; si plusieurs périodes étaient déjà ouvertes (données anciennes),
+  un bandeau d'alerte s'affiche sur la page Périodes.
 - **Notes** : 0–20 côté API (Zod + service) et côté interface (cellule rouge si
   hors bornes). Upsert en transaction : un prof ne touche QUE ses matières×alias.
 - **EDT** : créneaux `nb_heures × 55 min` ; `heure_fin` calculée. Conflits
@@ -340,15 +386,100 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
 - **Professeur** : accès strictement limité à SES affectations (contrôle API sur
   chaque route : 403 sinon).
 
+## Décisions & limites — Sprint 6
+
+- **Liste de renvoi** : l'application ne connaît pas de notion de « tranche ». Le
+  comptable choisit **classe + date d'arrêt** ; la liste reprend **tous** les
+  élèves de la classe avec : payé sur le dû (versements affectés aux échéances
+  ≤ date d'arrêt), reste dû, **Total à régler** (= échéances dues non couvertes
+  à la date d'arrêt, arriérés inclus), total payé, reste écolage complet,
+  dernier versement, statut À jour / À renvoyer. Les élèves « à renvoyer » sont
+  teintés (écran + PDF). Si la date d'arrêt est dans le futur → mention
+  « prévisionnelle » (même esprit que le PDF papier d'origine).
+  - « Écolage complet » affiché = frais de la classe (tuition_fees) ; si absent,
+    montant figé à l'inscription (si un seul montant) sinon « variable ».
+  - PDF : modèle togolais (entête école, entêtes de colonnes, totaux, note
+    explicative, lignes de signatures LE COMPTABLE / LE DIRECTEUR, aucune
+    mention « tranche »). Généré en mémoire, jamais écrit sur disque.
+  - Journalisé (`LISTE_RENVOI`) — visible dans l'onglet Journal.
+- **Feu vert (bulletins & cartes)** : deux autorisations permanentes,
+  activables/désactivables, réservées au DIRECTEUR
+  (`school_settings.cartes_impression_autorisee` / `bulletins_impression_autorisee`,
+  migration `006`). La SECRÉTAIRE obtient 403 `IMPRESSION_NON_AUTORISEE` à la
+  génération du PDF tant que le feu vert est coupé ; son écran affiche un bandeau
+  et désactive les boutons (ré-activés automatiquement à la levée, sans recharger).
+  Le DIRECTEUR n'est jamais contraint. Chaque bascule → notification à tous les
+  secrétaires actifs + audit (`UPDATE_FEUVERT`). Les drapeaux sont lisibles par
+  tout compte connecté via `/parametres` (information non sensible).
+- **Emploi du temps / cartes / bulletins / communiqués** : écrans **partagés**
+  Directeur ↔ Secrétaire (`pages/_shared/*Espace.jsx`, prop `espace`). Les
+  routes API de l'emploi du temps sont montées sous les deux espaces avec les
+  mêmes contrôleurs/règles (`routes/edtRoutes.js`) ; cartes, bulletins et
+  communiqués sont montés sous `/api/secretaire` (mêmes services, le feu vert
+  appliqué uniquement côté secrétaire). Le Directeur conserve tous ses écrans.
+- **Paramètres de l'école** : maintenus dans l'espace **Directeur** (choix
+  confirmé). Incohérence documentée : les tests Sprint 1 le plaçaient côté Admin ;
+  il a été déplacé au Sprint Documents, puis confirmé côté Directeur.
+- **Journal d'activités (Admin)** : `/admin/journal` — lecture paginée de
+  `audit_logs` enrichie (auteur joint, rôle), filtres : recherche (auteur),
+  action, entité, période ; détail d'une ligne (avant/après en JSON).
+  Journalise désormais aussi : `GENERATE_CARTES` / `GENERATE_BULLETINS`
+  (PDF générés, avec alias/cycle + rôle) et `LISTE_RENVOI`.
+- **Communiqués — onglet dans tous les espaces** : `/communiques`
+  (lecture seule, filtré) ajouté pour Admin / Comptable / Professeur / Parent ;
+  Directeur et Secrétaire publient et voient tout (avec l'éditeur existant).
+  Admin voit tout (pilotage/journalisation). Comptable/Professeur/Parent voient
+  les communiqués qui les concernent : TOUS, rôle ciblé, ou cycle/classe/alias
+  liés à leurs élèves (parent) ou affectations (professeur).
+  - Cibles ROLE étendues à ADMIN et DIRECTEUR (migration `006`).
+  - TOUS notifie désormais tous les comptes actifs (inclut Admin/Directeur).
+- **WhatsApp — absences / retards** : envoi **manuel** via liens wa.me
+  pré-remplis (modèle des relances, zéro coût). Après l'enregistrement de
+  l'appel, le professeur voit une modale listant chaque NOUVEAU absent/retardaire
+  avec un bouton « Ouvrir WhatsApp » (message pré-rempli mentionnant l'enfant,
+  la date, la matière et le renvoi vers l'espace Parent → « Absences & motifs »
+  pour le motif). Le lien est valable même pour un tuteur SANS compte School
+  Vie. Idempotence : rejouer le même appel le jour même ne propose rien de plus
+  (même règle que les notifications internes). Le push automatique 100 %
+  silencieux (Cloud API Meta, numéro Business + templates approuvés) reste
+  possible plus tard — non retenu pour l'instant.
+- **WhatsApp — mots de passe provisoires (REPORTÉ)** : les mots de passe
+  temporaires partent par e-mail quand l'adresse existe, sinon s'affichent une
+  fois à l'écran + lien wa.me manuel (comportement inchangé). L'envoi
+  automatique par WhatsApp sera traité ultérieurement (même arbitrage d'API).
+- **Notifications** : le type `SYSTEME` (déjà présent dans l'énumération) est
+  utilisé pour les messages de feu vert — aucune migration de la cloche requise.
+
+## Reçus : remplissage manuel + scan en preuve
+
+L'application **ne génère plus de PDF de reçu** (avant : reçu d'inscription et
+reçu de paiement à la volée). Les reçus sont remplis à la main comme
+d'habitude. En revanche, le **secrétaire** (paiement d'inscription) et le
+**comptable** (paiements de scolarité et inscription) peuvent **joindre un
+scan/photo du reçu** (PDF, PNG, JPEG, WebP — 5 Mo max) directement depuis
+- l'écran de confirmation d'inscription (écran « Inscription terminée ») ;
+- la fiche élève (secrétaire) — colonne « Preuve » dans le tableau des paiements
+  + bouton dans le bloc « Frais d'inscription » ;
+- l'écran d'encaissement (comptable) — juste après l'Enregistrer ;
+- la fiche de situation (comptable, modal) — colonne « Preuve ».
+
+La preuve est liée au paiement (`payments.justificatif_chemin`), remplaçable
+et retirable, visible par le secrétaire et le comptable « en cas de quoi »
+(contrôle, litige). Elle n'est **pas** visible des parents. Fichiers servis en
+lecture via `/uploads/justificatifs/` (noms aléatoires). Retirée/remplacée
+proprement : l'ancien fichier est supprimé du disque.
+
 ### Décisions & limites — Sprint 4
 
 - **Cartes scolaires** : 2×4 par page A4, QR code du matricule (npm `qrcode`,
   généré en mémoire). Nom de fichier propre dans le téléchargement
   (`bulletins-CP1-A.pdf` via `Content-Disposition` exposé par CORS).
-- **Bulletins** : design complet pdfkit (bandeau bleu + logo + filigrane,
-  photo ou initiales, une page par élève, moyenne/rang/assiduité). Rang par
-  compétition (1, 1, 3) ; moyenne de classe = moyenne des moyennes générales
-  renseignées. Calcul partagé (`classesDataService.js`) avec l'espace Parent.
+- **Bulletins** : design pdfkit au modèle togolais (en-tête RÉPUBLIQUE
+  TOGOLAISE + ministère, nom/logo de l'école, double filet, une page A4 par
+  élève, signature/cachet du Chef d'établissement si configurés). Rang par
+  compétition (1, 1, 3) affiché **1er/2ème/…** ; rang par matière ET rang
+  général ; moyenne de classe = moyenne des moyennes générales renseignées.
+  Calcul partagé (`classesDataService.js`) avec l'espace Parent.
 - **Communiqués** : cibles TOUS / ROLE / CYCLE / CLASSE / ALIAS ; résolution
   des destinataires (parents des inscrits + professeurs affectés),
   dédupliquée ; une notification par destinataire. Historique `announcements`
@@ -397,6 +528,77 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
   variables d'environnement comme en dev (DB_*, JWT_*, SMTP_* avec
   `MAIL_DRY_RUN=false` et `SMTP_PASS` renseigné, `CLIENT_URL` en HTTPS).
   Sauvegarde de la base : `mysqldump school_vie_db_004774 > backup-$(date +%F).sql`.
+
+## Bulletins (modèle togolais) & justifications d’absence
+
+### Bulletin PDF (une page A4 par élève)
+Modèle officiel **République togolaise** : `RÉPUBLIQUE TOGOLAISE` · devise
+*Travail – Liberté – Patrie* · **Ministère de l’Éducation Nationale** ·
+logo + nom de l’école (paramètres de l’école). Pas de totaux de groupes
+(« TOTAL SCIENCES »…), pas d’« Enseignant principal », pas de visa parent.
+Contenu :
+
+- informations de l’élève (matricule, né(e) le, classe/alias, effectif, sexe) ;
+- tableau des matières : Interro, Devoir, Compo, Moy., Coef, **Total**
+  (moyenne × coefficient), **Rang par matière** et appréciation ;
+- moyenne générale pondérée + **rang général** ;
+- **RÉSULTAT DE L’ÉLÈVE** : moyenne et rang (1er, 2ème…) de chaque trimestre
+  de l’année (le trimestre courant surligné) + appréciation générale ;
+- **PROFIL DE LA CLASSE** : admis (moy. 10/20), moyenne classe, % réussite,
+  max/min ;
+- **TRAVAIL DE L’ÉLÈVE** : Tableau d’Honneur / Encouragement / Félicitation /
+  Avertissement / Blâme (mentions *automatiques* indicatives, décision finale
+  au conseil de classe) ;
+- **CONDUITE DE L’ÉLÈVE** : absences totales / justifiées / non justifiées,
+  retards ;
+- **DÉCISION DU CONSEIL DE CLASSE** (cadre vierge) + **VISA DU CHEF
+  D’ÉTABLISSEMENT** (signature et cachet numériques de l’école si configurés).
+
+Les rangs s’affichent toujours au format français : **1er, 2ème, 3ème…**
+(jamais « 1/54 »). Calcul partagé (`classesDataService.js`) entre bulletins
+et espace Parent : rangs par compétition (1, 1, 3), ex æquo partagés,
+moyenne de classe = moyenne des moyennes générales renseignées.
+
+### Présences & justifications
+- Le **professeur** marque les absents/retards à l’appel (inchangé) et peut,
+  en option, marquer chaque absence **« justifiée »** (bouton + note
+  facultative).
+- Le **parent** voit les absences/retards de son enfant (page « Absences &
+  motifs ») et peut envoyer un **motif** (≤ 500 caractères). Un avertissement
+  s’affiche : le motif sera communiqué à l’école et pourra être utilisé au
+  **conseil de discipline**. Le parent peut modifier ou retirer son motif
+  (jamais celui saisi par le professeur).
+- Le motif du parent est **conservé** si le professeur re-enregistre l’appel
+  (fusion intelligente : statut + note identiques → auteur/date conservés).
+- **Statistiques** (Directeur + Secrétaire) : `/directeur(secretaire)/statistiques-presences`
+  — totaux (absences justifiées / non, retards, taux), évolution par période,
+  par alias/classe (effectifs, séances, taux d’absence), liste des élèves
+  concernés (+ recherche) et détail complet par élève (date, matière, motif).
+  Le Directeur dispose aussi du détail par élève (modale) ; le Professeur a
+  « Absences de mes élèves » (`/professeur/absences-eleves`) avec le même
+  détail.
+- Les parents sont **notifiés à chaque absence/retard** (inchangé).
+
+### Données de démonstration (bulletins/présences)
+```bash
+cd server
+npm run seed:demo   # crée des données FICTIVES (voir ci-dessous)
+npm run demo:reset  # supprime exactement ces données (+ restaure les paramètres école)
+```
+- École fictive togolaise « École primaire publique de Bè-Klikamé » (le
+  `school_settings` réel est sauvegardé puis restauré par `demo:reset`) ;
+- 8 élèves fictifs « DEMO-0001…0008 » en **CE1 A** (Primaire) ;
+- 1 professeur `prof.demo@demo.example.tg` / `Demo12345!`, 1 parent
+  `parent.demo@demo.example.tg` / `Demo12345!` (8 enfants), 1 comptable
+  `comptable.demo@demo.example.tg` / `Demo12345!` (comptes, fiches de
+  retard PDF, relances, rapports) ;
+- notes des Trimestres 1 et 2, absences/retards avec motifs variés
+  (justifiée parent, justifiée professeur, non justifiées) ;
+- échéanciers MENSUEL (9 échéances/élève) + paiements fictifs d'inscription
+  et de scolarité répartis (paiements ESPECES/FLOOZ/MIXX, ventilation
+  appliquée) — le comptable a donc des données à l'écran ;
+- `.demo-manifest.json` (ignoré par git) liste tout ce qui est créé →
+  `demo:reset` supprime précisément ces éléments.
 
 ## Sécurité (rappel)
 

@@ -10,12 +10,6 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 
-function maintenantLocal() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export default function PeriodesPage() {
   const toast = useToast();
   const { supprimer } = useConfirm();
@@ -42,7 +36,7 @@ export default function PeriodesPage() {
 
   const ouvrirCreation = () => {
     setEnEdition(null);
-    setForm({ libelle: '', ordre: (periodes.length || 0) + 1, date_debut: '', date_fin: '', saisie_debut: maintenantLocal(), saisie_fin: '' });
+    setForm({ libelle: '', ordre: (periodes.length || 0) + 1, date_debut: '', date_fin: '', saisie_debut: '', saisie_fin: '' });
     setFormErreur('');
     setModalOuvert(true);
   };
@@ -104,8 +98,8 @@ export default function PeriodesPage() {
     { cle: 'dates', titre: 'Dates', rendu: (p) => `${new Date(p.date_debut).toLocaleDateString('fr-FR')} → ${new Date(p.date_fin).toLocaleDateString('fr-FR')}` },
     { cle: 'fenetre', titre: 'Fenêtre de saisie', rendu: (p) => (
         <div style={{ fontSize: 12 }}>
-          <div>Du {p.saisie_debut ? new Date(p.saisie_debut).toLocaleString('fr-FR') : 'toujours'}</div>
-          <div>au {p.saisie_fin ? new Date(p.saisie_fin).toLocaleString('fr-FR') : 'sans fin'}</div>
+          <div>Du {p.saisie_debut ? new Date(p.saisie_debut).toLocaleString('fr-FR') : 'non définie'}</div>
+          <div>au {p.saisie_fin ? new Date(p.saisie_fin).toLocaleString('fr-FR') : 'non définie'}</div>
         </div>
       ) },
     { cle: 'etat', titre: 'État', rendu: (p) => {
@@ -129,7 +123,15 @@ export default function PeriodesPage() {
       <p className="text-doux mb-4">
         Définissez les périodes (Trimestre 1, 2, 3 ou Semestre 1, 2) et la <strong>fenêtre de saisie des notes</strong> pour chacune.
         En dehors de cette fenêtre, les professeurs ne peuvent ni saisir ni modifier de notes (blocage API + interface).
+        <strong> Une seule période peut être ouverte à la fois</strong> — les fenêtres ne se chevauchent jamais (validation automatique).
+        Une période sans fenêtre définie est <strong>fermée par défaut</strong> : ouvrez la saisie explicitement.
       </p>
+      {periodes.filter((p) => p.fenetre?.ouverte).length > 1 && (
+        <div className="auth-erreur mb-4" role="alert">
+          <strong>Attention : {periodes.filter((p) => p.fenetre?.ouverte).length} périodes sont ouvertes.</strong><br />
+          Une seule période peut être ouverte à la fois — modifiez les fenêtres pour n’en garder qu’une (ex. fermez celle qui ne doit plus recevoir de notes).
+        </div>
+      )}
       {erreur && <div className="auth-erreur mb-4" role="alert">{erreur}</div>}
 
       <div className="flex-between mb-4 gap-3" style={{ flexWrap: 'wrap' }}>
@@ -157,10 +159,10 @@ export default function PeriodesPage() {
               <Input label="Fin de la période" name="date_fin" type="date" value={form.date_fin} onChange={(e) => setForm({ ...form, date_fin: e.target.value })} required />
             </div>
             <div className="grid-2 mt-4">
-              <Input label="Ouverture de la saisie" name="saisie_debut" type="datetime-local" value={form.saisie_debut} onChange={(e) => setForm({ ...form, saisie_debut: e.target.value })} aide="Vide = ouverture immédiate" />
+              <Input label="Ouverture de la saisie" name="saisie_debut" type="datetime-local" value={form.saisie_debut} onChange={(e) => setForm({ ...form, saisie_debut: e.target.value })} aide="Vide = pas d’ouverture" />
               <Input label="Fermeture de la saisie" name="saisie_fin" type="datetime-local" value={form.saisie_fin} onChange={(e) => setForm({ ...form, saisie_fin: e.target.value })} aide="Vide = pas de fermeture" />
             </div>
-            <p className="text-doux mt-4" style={{ fontSize: 12 }}>Laissez « Ouverture » vide pour ouvrir maintenant ; « Fermeture » vide = saisie toujours ouverte. Toute écriture hors fenêtre est refusée côté API et masquée côté interface.</p>
+            <p className="text-doux mt-4" style={{ fontSize: 12 }}>Laissez les deux champs vides : la période reste <strong>fermée</strong>. Une seule période peut être ouverte à la fois — si la fenêtre chevauche celle d’une autre période, l’enregistrement est refusé. Toute écriture hors fenêtre est refusée côté API et masquée côté interface.</p>
           </form>
         </Modal>
       )}

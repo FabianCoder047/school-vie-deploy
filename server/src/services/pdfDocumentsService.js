@@ -1,82 +1,16 @@
-// Documents PDF à la volée : reçus, fiches de retard, rapports.
+// Documents PDF à la volée : fiches de retard, rapports comptables.
 // JAMAIS écrits sur disque — générés en mémoire et streamés.
+// NB : les reçus ne sont PAS générés — le reçu papier est rempli à la main
+// et scanné ensuite via POST /paiements/:id/justificatif (preuve).
 const { creerDocument, finaliser, titreDocument, ligneCleValeur, encadreMontant, formatMontant } = require('../utils/pdf');
-const paymentRepo = require('../repositories/paymentRepository');
-const enrollmentRepo = require('../repositories/enrollmentRepository');
 const scheduleRepo = require('../repositories/paymentScheduleRepository');
 const settingsRepo = require('../repositories/settingsRepository');
 const yearRepo = require('../repositories/academicYearRepository');
 const { selectionnerEnRetard, rapportParClasse } = require('./accountService');
-const { MOYENS_LIBELLE } = require('./paymentService');
+const { ymd } = require('../utils/dates');
 
 function dateFr(d) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-}
-
-/** Reçu (inscription ou scolarité) à partir d'un paiement. */
-async function genererRecu(res, payment, actorRole) {
-  const fiche = await enrollmentRepo.findById(payment.enrollment_id);
-  const settings = await settingsRepo.get();
-  const devise = settings?.devise || 'FCFA';
-  const typeLabel = payment.type === 'INSCRIPTION' ? "Reçu d'inscription" : 'Reçu de paiement de scolarité';
-  const doc = await creerDocument(res, `${payment.numero_recu}.pdf`);
-
-  titreDocument(doc, typeLabel.toUpperCase(), `N° ${payment.numero_recu} — ${dateFr(payment.date_paiement)}`);
-  ligneCleValeur(doc, 'Élève', `${fiche.prenom} ${fiche.nom}`);
-  ligneCleValeur(doc, 'Matricule', fiche.matricule);
-  ligneCleValeur(doc, 'Classe / Alias', `${fiche.classe_nom} · ${fiche.alias_nom}`);
-  ligneCleValeur(doc, 'Année académique', fiche.annee_libelle);
-  ligneCleValeur(doc, 'Modalité de paiement', fiche.modalite_paiement);
-  doc.moveDown(0.4);
-  ligneCleValeur(doc, 'Moyen de paiement', MOYENS_LIBELLE[payment.moyen] || payment.moyen);
-  if (payment.reference_transaction) {
-    ligneCleValeur(doc, 'Référence de transaction', payment.reference_transaction);
-  }
-  ligneCleValeur(doc, 'Saisi par', `${payment.saisi_par_prenom} ${payment.saisi_par_nom}`);
-  encadreMontant(doc, 'MONTANT PAYÉ', formatMontant(payment.montant, devise));
-
-  doc.fontSize(9).fillColor('#64748b').font('Helvetica')
-    .text(`En lettres : ${montantEnLettres(Number(payment.montant))} ${devise} — reçu le ${dateFr(payment.date_paiement)}.`, 40, doc.y, { width: 515 });
-  doc.moveDown(2);
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica');
-  doc.text(`Fait à …………………, le ${dateFr(new Date())}`, 40);
-  doc.moveDown(2);
-  doc.text(actorRole === 'SECRETAIRE' ? 'La Secrétaire' : 'Le Comptable', 350, doc.y);
-  doc.text('Signature et cachet', 350, doc.y + 4);
-
-  finaliser(doc);
-}
-
-/** Montant en toutes lettres (français, simplifié FCFA). */
-function montantEnLettres(n) {
-  const unites = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
-  const dizaines = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante', 'quatre-vingt', 'quatre-vingt'];
-  const deux = (x) => {
-    if (x < 20) return unites[x];
-    const d = Math.floor(x / 10);
-    const u = x % 10;
-    if (d === 7 || d === 9) return `${dizaines[d]}${u === 1 && d === 7 ? '-et' : ''}${u === 0 ? '' : '-' + (d === 7 ? unites[10 + u] : unites[u])}`;
-    if (u === 1 && d !== 8) return `${dizaines[d]} et un`;
-    if (u === 0) return d === 8 ? 'quatre-vingts' : dizaines[d];
-    return `${dizaines[d]}-${unites[u]}`;
-  };
-  const centaines = (x) => {
-    if (x < 100) return deux(x);
-    const c = Math.floor(x / 100);
-    const reste = x % 100;
-    const cent = c === 1 ? 'cent' : `${unites[c]} cent${reste === 0 ? 's' : ''}`;
-    return reste === 0 ? cent : `${cent} ${deux(reste)}`;
-  };
-  const entier = Math.floor(Math.abs(n));
-  if (entier === 0) return 'zéro';
-  const millions = Math.floor(entier / 1_000_000);
-  const milliers = Math.floor((entier % 1_000_000) / 1000);
-  const reste = entier % 1000;
-  const parts = [];
-  if (millions) parts.push(`${millions > 1 ? `${deux(millions)} ` : ''}million${millions > 1 ? 's' : ''}`);
-  if (milliers) parts.push(`${milliers > 1 ? `${deux(milliers)} ` : ''}mille`);
-  if (reste) parts.push(centaines(reste));
-  return parts.join(' ');
 }
 
 /** Fiches de retard groupées (une par élève) selon filtres + modalité. */
@@ -95,14 +29,14 @@ async function genererFichesRetard(res, filtres, actorNom) {
     return;
   }
 
-  const dateDuJour = new Date().toISOString().slice(0, 10);
+  const dateDuJour = ymd(new Date());
   let premiere = true;
   for (const ligne of lignes) {
     if (!premiere) doc.addPage();
     premiere = false;
 
     const echeances = (await scheduleRepo.listByEnrollment(ligne.enrollment_id))
-      .filter((e) => e.statut !== 'PAYE' && String(e.date_echeance).slice(0, 10) < dateDuJour);
+      .filter((e) => e.statut !== 'PAYE' && ymd(e.date_echeance) < dateDuJour);
 
     titreDocument(doc, 'FICHE DE RETARD DE PAIEMENT', `Modalité : ${ligne.modalite_paiement}`);
     ligneCleValeur(doc, 'Élève', `${ligne.prenom} ${ligne.nom}`);
@@ -188,4 +122,4 @@ async function genererRapportPdf(res, { academic_year_id, cycle_id }, actorNom) 
   finaliser(doc);
 }
 
-module.exports = { genererRecu, genererFichesRetard, genererRapportPdf, montantEnLettres, dateFr };
+module.exports = { genererFichesRetard, genererRapportPdf, dateFr };

@@ -11,7 +11,7 @@ import Button from '../../components/Button';
 import FilterBar from '../../components/FilterBar';
 import SelectFiltre from '../../components/SelectFiltre';
 import Modal from '../../components/Modal';
-import ApercuPdf from '../../components/ApercuPdf';
+import UploadPreuveRecu from '../../components/UploadPreuveRecu';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
@@ -105,6 +105,15 @@ function FicheEleveModal({ ficheId, onFermer, onModifie }) {
   const toast = useToast();
   const { supprimer } = useConfirm();
   const [fiche, setFiche] = useState(null);
+
+  const majPreuve = (paymentId, chemin) => setFiche((f) => (f ? {
+    ...f,
+    payments: (f.payments || []).map((x) => (x.id === paymentId ? { ...x, justificatif_chemin: chemin } : x)),
+    paiementInscription: f.paiementInscription && f.paiementInscription.id === paymentId
+      ? { ...f.paiementInscription, justificatif_chemin: chemin }
+      : f.paiementInscription,
+  } : f));
+
   const [erreur, setErreur] = useState('');
   const [enEdition, setEnEdition] = useState(false);
   const [envoi, setEnvoi] = useState(false);
@@ -115,7 +124,6 @@ function FicheEleveModal({ ficheId, onFermer, onModifie }) {
   const [paiementEnCours, setPaiementEnCours] = useState(false);
   const [paiementErreur, setPaiementErreur] = useState('');
   const [paymentInscriptionId, setPaymentInscriptionId] = useState(null);
-  const [apercuPdf, setApercuPdf] = useState(null); // { url, titre }
 
   const charger = () => api.get(`/secretaire/eleves/${ficheId}`).then(({ data }) => {
     setFiche(data);
@@ -312,7 +320,7 @@ function FicheEleveModal({ ficheId, onFermer, onModifie }) {
                 <p style={{ fontSize: 12, color: 'var(--jaune-800)' }}>{fiche.paiementInscription ? `Payés le ${new Date(fiche.paiementInscription.date_paiement).toLocaleDateString('fr-FR')} — reçu n° ${fiche.paiementInscription.numero_recu}` : 'Non réglés — l’élève est en attente.'}</p>
               </div>
               {fiche.paiementInscription ? (
-                <Button variant="secondary" size="sm" onClick={() => setApercuPdf({ url: `/secretaire/paiements/${fiche.paiementInscription.id}/recu`, titre: `Reçu d’inscription — ${fiche.prenom} ${fiche.nom}` })}>Aperçu du reçu</Button>
+                <UploadPreuveRecu base="/secretaire" paymentId={fiche.paiementInscription.id} compact preuve={fiche.paiementInscription.justificatif_chemin ?? null} onChange={(chemin) => majPreuve(fiche.paiementInscription.id, chemin)} />
               ) : (
                 <Button size="sm" onClick={() => setModalInscription(true)}>Marquer payés</Button>
               )}
@@ -344,7 +352,7 @@ function FicheEleveModal({ ficheId, onFermer, onModifie }) {
               <p className="sidebar-section mt-6" style={{ color: 'var(--bleu-800)', background: 'var(--bleu-50)', borderRadius: 'var(--rayon-sm)', padding: '6px 10px', marginBottom: 8 }}>Paiements ({fiche.payments.length})</p>
               <div className="table-conteneur" style={{ maxHeight: 220 }}>
                 <table className="tableau" style={{ minWidth: 520 }}>
-                  <thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Moyen</th><th>Reçu</th><th>Statut</th></tr></thead>
+                  <thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Moyen</th><th>Reçu</th><th>Preuve</th><th>Statut</th></tr></thead>
                   <tbody>
                     {fiche.payments.map((p) => (
                       <tr key={p.id}>
@@ -352,7 +360,10 @@ function FicheEleveModal({ ficheId, onFermer, onModifie }) {
                         <td>{p.type === 'INSCRIPTION' ? 'Inscription' : 'Scolarité'}</td>
                         <td>{Number(p.montant).toLocaleString('fr-FR')}</td>
                         <td>{p.moyen === 'ESPECES' ? 'Espèces' : p.moyen === 'FLOOZ' ? 'Flooz' : 'Mixx By Yas'}</td>
-                        <td>{p.numero_recu}</td>
+                        <td><code>{p.numero_recu}</code></td>
+                        <td>
+                          <UploadPreuveRecu base="/secretaire" paymentId={p.id} compact preuve={p.justificatif_chemin ?? null} onChange={(chemin) => majPreuve(p.id, chemin)} />
+                        </td>
                         <td><Badge couleur={p.statut === 'VALIDE' ? 'vert' : 'rouge'}>{p.statut === 'VALIDE' ? 'Validé' : 'Annulé'}</Badge></td>
                       </tr>
                     ))}
@@ -391,8 +402,6 @@ function FicheEleveModal({ ficheId, onFermer, onModifie }) {
         </div>
       )}
 
-      {/* Aperçu du reçu dans l'application */}
-      {apercuPdf && <ApercuPdf titre={apercuPdf.titre} url={apercuPdf.url} onFermer={() => setApercuPdf(null)} />}
     </Modal>
   );
 }

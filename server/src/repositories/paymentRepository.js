@@ -15,7 +15,7 @@ async function create({ enrollment_id, type, montant, moyen, reference_transacti
 async function findById(id) {
   const [[row]] = await pool.query(
     `SELECT p.id, p.enrollment_id, p.type, p.montant, p.moyen, p.reference_transaction, p.numero_recu,
-            p.date_paiement, p.statut, p.motif_annulation, p.created_at,
+            p.date_paiement, p.statut, p.motif_annulation, p.justificatif_chemin, p.justificatif_at, p.created_at,
             u.nom AS saisi_par_nom, u.prenom AS saisi_par_prenom
        FROM payments p JOIN users u ON u.id = p.created_by
       WHERE p.id = ?`,
@@ -35,12 +35,22 @@ async function existsInscriptionValide(enrollmentId) {
 async function listByEnrollment(enrollmentId) {
   const [rows] = await pool.query(
     `SELECT p.id, p.type, p.montant, p.moyen, p.reference_transaction, p.numero_recu, p.date_paiement, p.statut, p.motif_annulation,
+            p.justificatif_chemin, p.justificatif_at,
             CONCAT(u.prenom, ' ', u.nom) AS saisi_par
        FROM payments p JOIN users u ON u.id = p.created_by
       WHERE p.enrollment_id = ? ORDER BY p.date_paiement, p.id`,
     [enrollmentId]
   );
   return rows;
+}
+
+/** Pose (ou retire, si chemin = null) le justificatif scanné d'un reçu. */
+async function setJustificatif(id, chemin) {
+  await pool.query(
+    'UPDATE payments SET justificatif_chemin = ?, justificatif_at = ? WHERE id = ?',
+    [chemin, chemin ? new Date() : null, id]
+  );
+  return findById(id);
 }
 
 async function setStatutAnnule(id, motif, conn) {
@@ -182,7 +192,7 @@ async function listReminders({ page, parPage, offset, enrollmentId }) {
 }
 
 module.exports = {
-  create, findById, existsInscriptionValide, listByEnrollment, setStatutAnnule, reverseAllocations,
+  create, findById, existsInscriptionValide, listByEnrollment, setJustificatif, setStatutAnnule, reverseAllocations,
   insertAllocation, totalEncaisse, totalEncaisseParMoyen, encaissementsParJour, rapportParClasse,
   insertReminder, listReminders,
 };

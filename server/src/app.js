@@ -12,6 +12,8 @@ const { authenticate } = require('./middlewares/authenticate');
 const { requirePasswordChanged, authorizeRoles } = require('./middlewares/authorizeRoles');
 const authRoutes = require('./routes/authRoutes');
 const healthRoutes = require('./routes/healthRoutes');
+const maintenanceRoutes = require('./routes/maintenanceRoutes');
+const { maintenanceGuard } = require('./middlewares/maintenanceGuard');
 const referentielRoutes = require('./routes/referentielRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const directeurRoutes = require('./routes/directeurRoutes');
@@ -46,6 +48,11 @@ app.use(
 
 app.use(express.json({ limit: '2mb' }));
 app.use(globalLimiter);
+
+// Statut public de la maintenance (page de garde du front) — toujours servi.
+app.use('/api', maintenanceRoutes);
+// Tout le reste est inactif pour les non-admins pendant la maintenance.
+app.use(maintenanceGuard);
 
 // Fichiers publics autorisés : logo de l'école (les PDF sont générés en
 // mémoire — jamais écrits sur disque).

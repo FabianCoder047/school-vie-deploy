@@ -26,4 +26,9 @@ router.get('/mon-edt', controleur.monEdt);
 /* Tableau de bord */
 router.get('/dashboard', controleur.dashboard);
 
+/* Statistiques de présences + fiche absences d'un élève (des alias du prof) */
+const presenceStats = require('../controllers/presenceStatsController');
+router.get('/eleves-absences', presenceStats.elevesAbsencesProfesseur);
+router.get('/eleve/:enrollmentId/absences', presenceStats.absencesEleveProfesseur);
+
 module.exports = router;

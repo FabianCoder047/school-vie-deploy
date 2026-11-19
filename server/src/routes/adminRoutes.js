@@ -4,12 +4,14 @@ const controleur = require('../controllers/referentielController');
 const comptes = require('../controllers/accountsController');
 const settings = require('../controllers/settingsAndDashboardController');
 const sauvegarde = require('../controllers/sauvegardeController');
+const journal = require('../controllers/journalController');
 const { validate } = require('../middlewares/validate');
 const { uploadBackupMemory, multerErrorHandler } = require('../middlewares/upload');
 const {
   cycleSchema, classeSchema, matiereSchema, anneeAcademiqueSchema,
-  creationCompteSchema, statutCompteSchema,
+  creationCompteSchema, statutCompteSchema, maintenanceSchema,
 } = require('../validators/configurationValidators');
+const maintenance = require('../controllers/maintenanceController');
 const { generationSauvegardeSchema } = require('../validators/sauvegardeValidators');
 
 const router = express.Router();
@@ -43,12 +45,21 @@ router.post('/directeurs', validate(creationCompteSchema), comptes.creer);
 router.patch('/directeurs/:id/statut', validate(statutCompteSchema), comptes.setStatut);
 router.post('/directeurs/:id/renvoyer-identifiants', comptes.renvoyerIdentifiants);
 
+/* Maintenance — fenêtre définie par l'administrateur (le site est inactif pour les autres) */
+router.get('/maintenance', maintenance.lireMaintenance);
+router.put('/maintenance', validate(maintenanceSchema), maintenance.definirMaintenance);
+router.post('/maintenance/terminer', maintenance.terminerMaintenance);
+
 /* Sauvegardes par année académique */
 router.get('/sauvegardes', sauvegarde.lister);
 router.post('/sauvegardes', validate(generationSauvegardeSchema), sauvegarde.generer);
 router.post('/sauvegardes/restaurer', (req, res, next) => {
   uploadBackupMemory.single('sauvegarde')(req, res, (err) => (err ? multerErrorHandler(err, req, res, next) : next()));
 }, sauvegarde.restaurer);
+
+/* Journal d'activités — tout le monde (lecture paginée, filtres) */
+router.get('/journal', journal.lister);
+router.get('/journal/filtres', journal.filtres);
 
 /* Tableau de bord */
 router.get('/dashboard', settings.dashboardAdmin);

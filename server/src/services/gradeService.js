@@ -66,7 +66,6 @@ async function feuille({ teacherId, classAliasId, classSubjectId, evaluationPeri
     interro: r.interro !== null ? Number(r.interro) : null,
     devoir: r.devoir !== null ? Number(r.devoir) : null,
     compo: r.compo !== null ? Number(r.compo) : null,
-    appreciation: r.appreciation,
     moyenne: moyenneMatiere(r),
   }));
   return {
@@ -120,7 +119,7 @@ async function enregistrerFeuille({ teacherId, classAliasId, classSubjectId, eva
           interro: vals[0]?.toFixed(2) ?? null,
           devoir: vals[1]?.toFixed(2) ?? null,
           compo: vals[2]?.toFixed(2) ?? null,
-          appreciation: ligne.appreciation?.trim() || null,
+          appreciation: null, // calcul automatique (moyenne de matière) — non modifiable
           entered_by: teacherId,
         },
         conn

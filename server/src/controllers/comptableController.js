@@ -3,7 +3,7 @@ const paymentService = require('../services/paymentService');
 const pdfDocuments = require('../services/pdfDocumentsService');
 const accountService = require('../services/accountService');
 const paymentRepo = require('../repositories/paymentRepository');
-const { ApiError } = require('../utils/ApiError');
+const listeRenvoi = require('../services/listeRenvoiService');
 
 /* ===== PAIEMENTS ===== */
 async function payerScolarite(req, res, next) {
@@ -17,14 +17,6 @@ async function annulerPaiement(req, res, next) {
   try {
     const result = await paymentService.annulerPaiement(Number(req.params.paymentId), req.body.motif, req.user.id, req.ip);
     res.json(result);
-  } catch (err) { next(err); }
-}
-
-async function recuPaiement(req, res, next) {
-  try {
-    const payment = await paymentRepo.findById(Number(req.params.paymentId));
-    if (!payment) throw ApiError.notFound('Paiement introuvable.');
-    await pdfDocuments.genererRecu(res, payment, 'COMPTABLE');
   } catch (err) { next(err); }
 }
 
@@ -78,10 +70,26 @@ async function dashboard(_req, res, next) {
   try { res.json(await require('../services/dashboardService').dashboardComptable()); } catch (err) { next(err); }
 }
 
+/* ===== LISTE DE RENVOI (classe, échéances arrêtées à une date) ===== */
+async function listeRenvoiJson(req, res, next) {
+  try { res.json(await listeRenvoi.calculerListe({ classId: Number(req.query.class_id), au: req.query.au })); } catch (err) { next(err); }
+}
+
+async function listeRenvoiPdf(req, res, next) {
+  try {
+    await listeRenvoi.genererListeRenvoiPdf(res, {
+      classId: Number(req.query.class_id),
+      au: req.query.au,
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      ip: req.ip,
+    });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   payerScolarite,
   annulerPaiement,
-  recuPaiement,
   listerComptes,
   situation,
   comptesEnRetard,
@@ -91,4 +99,6 @@ module.exports = {
   rapportJson,
   rapportPdf,
   dashboard,
+  listeRenvoiJson,
+  listeRenvoiPdf,
 };

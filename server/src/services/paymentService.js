@@ -11,6 +11,7 @@ const scheduleRepo = require('../repositories/paymentScheduleRepository');
 const paymentRepo = require('../repositories/paymentRepository');
 const { nextReceiptNumber } = require('../utils/sequences');
 const { log: audit } = require('../repositories/auditRepository');
+const { ymd } = require('../utils/dates');
 
 const MOYENS = ['ESPECES', 'FLOOZ', 'MIXX_BY_YAS'];
 
@@ -19,7 +20,7 @@ function calculerStatut(totalDu, totalPaye, echeances, dateDuJour) {
   const reste = Number((totalDu - totalPaye).toFixed(2));
   if (reste <= 0) return 'SOLDE';
   const retard = echeances.some(
-    (e) => e.statut !== 'PAYE' && String(e.date_echeance).slice(0, 10) < dateDuJour
+    (e) => e.statut !== 'PAYE' && ymd(e.date_echeance) < ymd(dateDuJour)
   );
   return retard ? 'EN_RETARD' : 'A_JOUR';
 }
@@ -34,7 +35,7 @@ async function situation(enrollmentId) {
   ]);
   const totalDu = echeances.reduce((acc, e) => acc + Number(e.montant_du), 0);
   const totalPaye = echeances.reduce((acc, e) => acc + Number(e.montant_paye), 0);
-  const dateDuJour = new Date().toISOString().slice(0, 10);
+  const dateDuJour = ymd(new Date());
   return {
     fiche,
     echeances,

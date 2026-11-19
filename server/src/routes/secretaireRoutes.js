@@ -2,7 +2,7 @@
 const express = require('express');
 const controleur = require('../controllers/secretaireController');
 const { validate } = require('../middlewares/validate');
-const { uploadPhoto, multerErrorHandler } = require('../middlewares/upload');
+const { uploadPhoto, uploadJustificatif, multerErrorHandler } = require('../middlewares/upload');
 const { inscriptionSchema, paiementInscriptionSchema, modifierEleveSchema } = require('../validators/inscriptionValidators');
 
 const router = express.Router();
@@ -25,10 +25,33 @@ router.delete('/eleves/:enrollmentId/photo', controleur.supprimerPhoto);
 router.get('/eleves/:enrollmentId/situation', controleur.situation);
 router.post('/eleves/:enrollmentId/paiement-inscription', validate(paiementInscriptionSchema), controleur.payerInscription);
 
-/* Reçu d'inscription (PDF à la volée) */
-router.get('/paiements/:paymentId/recu', controleur.recuInscription);
+/* Preuve (scan/PDF) du reçu d'inscription rempli à la main — « en cas de quoi » */
+const justificatif = require('../controllers/justificatifController');
+router.post('/paiements/:paymentId/justificatif', (req, res, next) => {
+  uploadJustificatif.single('justificatif')(req, res, (err) => (err ? multerErrorHandler(err, req, res, next) : next()));
+}, justificatif.poser);
+router.delete('/paiements/:paymentId/justificatif', justificatif.retirer);
 
 /* Tableau de bord */
 router.get('/dashboard', controleur.dashboard);
+
+/* Routes partagées avec le Directeur : emploi du temps, documents (cartes/bulletins
+   — avec feu vert obligatoire côté API), communiqués (publication) */
+const edtRoutes = require('./edtRoutes');
+const { verifierFeuVert } = require('../middlewares/impression');
+const documents = require('../controllers/documentEtCommuniqueController');
+const { communiqueSchema } = require('../validators/communiqueValidators');
+
+router.use('/', edtRoutes);
+router.get('/cartes/alias/:classAliasId', verifierFeuVert('cartes'), documents.cartesAlias);
+router.get('/cartes/cycle/:cycleId', verifierFeuVert('cartes'), documents.cartesCycle);
+router.get('/bulletins/alias/:classAliasId', verifierFeuVert('bulletins'), documents.bulletinsAlias);
+router.get('/bulletins/cycle/:cycleId', verifierFeuVert('bulletins'), documents.bulletinsCycle);
+router.get('/communiques', documents.listerCommuniques);
+router.post('/communiques', validate(communiqueSchema), documents.publierCommunique);
+
+/* Statistiques de présences (même agrégats que le directeur) */
+const presenceStats = require('../controllers/presenceStatsController');
+router.get('/statistiques-presences', presenceStats.statistiques);
 
 module.exports = router;

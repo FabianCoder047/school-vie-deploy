@@ -56,6 +56,15 @@ const statutCompteSchema = z.object({
   is_active: z.boolean({ required_error: 'is_active est requis.' }),
 });
 
+/* ===== Maintenance (fenêtre définie par l'administrateur) ===== */
+const maintenanceSchema = z.object({
+  debut: z.string().min(1, 'La date de début est requise.')
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Date de début invalide.'),
+  fin: z.string().min(1, 'La date de fin est requise.')
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Date de fin invalide.'),
+  message: z.string().trim().max(255, 'Le message ne doit pas dépasser 255 caractères.').optional().nullable(),
+});
+
 /* ===== Alias ===== */
 const aliasSchema = z.object({
   class_id: z.coerce.number().int().positive('La classe est requise.'),
@@ -82,6 +91,11 @@ const affectationProfesseurSchema = z.object({
   })).min(1, 'Sélectionnez au moins une matière et un alias.'),
 });
 
+/* ===== Feu vert du directeur (impression cartes / bulletins) ===== */
+const impressionSchema = z.object({
+  autorisee: z.boolean({ errorMap: () => ({ message: 'La valeur « autorisee » (true/false) est requise.' }) }),
+});
+
 module.exports = {
   cycleSchema,
   classeSchema,
@@ -93,4 +107,6 @@ module.exports = {
   aliasSchema,
   affectationMatiereSchema,
   affectationProfesseurSchema,
+  impressionSchema,
+  maintenanceSchema,
 };

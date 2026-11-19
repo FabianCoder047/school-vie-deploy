@@ -10,6 +10,7 @@ const { appreciation } = require('./moyenneService');
 const timetableService = require('./timetableService');
 const paymentService = require('./paymentService');
 const notificationRepo = require('../repositories/notificationRepository');
+const justificationService = require('./justificationService');
 
 /** Vérifie que l'élève (enrollment) appartient bien à un tuteur du parent connecté. */
 async function assertEnfantDuParent(userId, enrollmentId) {
@@ -109,9 +110,41 @@ async function notesEnfant(userId, enrollmentId, evaluationPeriodId) {
     effectif: donnees.effectif,
     moyenneClasse: donnees.moyenneClasse,
     absences: ligne.absences,
+    absencesJustifiees: ligne.absencesJustifiees,
+    absencesNonJustifiees: ligne.absencesNonJustifiees,
     retards: ligne.retards,
     retardMinutes: ligne.retardMinutes,
   };
+}
+
+/** Absences/retards d'un enfant + motifs (le parent peut en renseigner). */
+async function absencesEnfant(userId, enrollmentId) {
+  const enfant = await assertEnfantDuParent(userId, enrollmentId);
+  const detail = await justificationService.absencesEleve(enrollmentId);
+  return {
+    enfant: {
+      enrollment_id: enfant.enrollment_id,
+      matricule: enfant.matricule,
+      nom: enfant.nom,
+      prenom: enfant.prenom,
+      classe_nom: detail.eleve.classe_nom,
+      alias_nom: detail.eleve.alias_nom,
+      cycle_nom: detail.eleve.cycle_nom,
+      photo_path: enfant.photo_path,
+    },
+    absences: detail.absences,
+    summary: detail.summary,
+  };
+}
+
+/** Parent : renseigne/modifie le motif d'une absence de son enfant. */
+async function justifierAbsence(userId, recordId, motif) {
+  return justificationService.justifierMotif(userId, recordId, motif);
+}
+
+/** Parent : retire le motif qu'il avait envoyé. */
+async function retirerMotifAbsence(userId, recordId) {
+  return justificationService.retirerMotif(userId, recordId);
 }
 
 /** Emploi du temps de l'alias de l'enfant (lecture seule). */
@@ -122,10 +155,14 @@ async function edtEnfant(userId, enrollmentId) {
   return { annee, creneaux };
 }
 
-/** Situation financière de l'enfant (lecture seule). */
+/** Situation financière de l'enfant (lecture seule) — preuve justificative masquée. */
 async function financeEnfant(userId, enrollmentId) {
   await assertEnfantDuParent(userId, enrollmentId);
-  return paymentService.situation(Number(enrollmentId));
+  const situation = await paymentService.situation(Number(enrollmentId));
+  return {
+    ...situation,
+    payments: (situation.payments || []).map(({ justificatif_chemin, justificatif_at, ...p }) => p),
+  };
 }
 
-module.exports = { mesEnfants, dashboard, notesEnfant, edtEnfant, financeEnfant, assertEnfantDuParent };
+module.exports = { mesEnfants, dashboard, notesEnfant, edtEnfant, financeEnfant, absencesEnfant, justifierAbsence, retirerMotifAbsence, assertEnfantDuParent };

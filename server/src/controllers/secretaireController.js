@@ -4,8 +4,6 @@ const fs = require('fs');
 const studentService = require('../services/studentService');
 const paymentService = require('../services/paymentService');
 const feeService = require('../services/feeService');
-const pdfDocuments = require('../services/pdfDocumentsService');
-const paymentRepo = require('../repositories/paymentRepository');
 const { ApiError } = require('../utils/ApiError');
 const studentRepo = require('../repositories/studentRepository');
 const { log: audit } = require('../repositories/auditRepository');
@@ -91,16 +89,6 @@ async function situation(req, res, next) {
   try { res.json(await paymentService.situation(Number(req.params.enrollmentId))); } catch (err) { next(err); }
 }
 
-/* ===== REÇU D'INSCRIPTION (PDF) ===== */
-async function recuInscription(req, res, next) {
-  try {
-    const payment = await paymentRepo.findById(Number(req.params.paymentId));
-    if (!payment) throw ApiError.notFound('Paiement introuvable.');
-    if (payment.type !== 'INSCRIPTION') throw ApiError.forbidden('Ce reçu est un paiement de scolarité — à imprimer depuis l’espace Comptable.', 'TYPE_INVALID');
-    await pdfDocuments.genererRecu(res, payment, 'SECRETAIRE');
-  } catch (err) { next(err); }
-}
-
 /* ===== DASHBOARD ===== */
 async function dashboard(_req, res, next) {
   try { res.json(await require('../services/dashboardService').dashboardSecretaire()); } catch (err) { next(err); }
@@ -117,6 +105,5 @@ module.exports = {
   supprimerPhoto,
   payerInscription,
   situation,
-  recuInscription,
   dashboard,
 };

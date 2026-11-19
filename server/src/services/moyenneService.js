@@ -67,13 +67,13 @@ function moyenneGenerale(lignes) {
 /** Appréciation automatique selon la moyenne (grille classique). */
 function appreciation(moyenneValue) {
   if (moyenneValue === null || moyenneValue === undefined) return null;
-  if (moyenneValue >= 16) return 'Excellent';
-  if (moyenneValue >= 14) return 'Très bien';
-  if (moyenneValue >= 12) return 'Bien';
-  if (moyenneValue >= 10) return 'Assez bien';
-  if (moyenneValue >= 8) return 'Passable';
-  if (moyenneValue >= 6) return 'Insuffisant';
-  return 'Très faible';
+  if (moyenneValue >= 16) return 'Très bien';
+  if (moyenneValue >= 14) return 'Bien';
+  if (moyenneValue >= 12) return 'Assez bien';
+  if (moyenneValue >= 10) return 'Passable';
+  if (moyenneValue >= 8) return 'Insuffisant';
+  if (moyenneValue >= 6) return 'Faible';
+  return 'Médiocre';
 }
 
 module.exports = { moyenneMatiere, moyenneGenerale, moyenne, arrondir, noteOuNull, appreciation };

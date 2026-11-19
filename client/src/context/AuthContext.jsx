@@ -23,8 +23,11 @@ export function AuthProvider({ children }) {
         if (!actif) return;
         setTokens({ access: data.accessToken, refresh: data.refreshToken });
         setUser(data.user);
-      } catch (_err) {
-        clearTokens();
+      } catch (err) {
+        // Pendant une maintenance, l'API répond 503 MAINTENANCE : on garde
+        // les tokens (la session reprendra dès la fin) au lieu de déconnecter.
+        const estMaintenance = err?.response?.status === 503 && err?.response?.data?.code === 'MAINTENANCE';
+        if (!estMaintenance) clearTokens();
       } finally {
         if (actif) setChargement(false);
       }

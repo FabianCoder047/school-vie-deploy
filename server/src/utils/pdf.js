@@ -95,9 +95,15 @@ function finaliser(doc) {
   doc.end();
 }
 
+// Les espaces insécables fines de toLocaleString('fr-FR') (U+202F) sont absents
+// de la police Helvetica des PDF → on groupe les milliers avec des espaces simples.
 const formatMontant = (valeur, devise = 'FCFA') => {
   const n = Number(valeur || 0);
-  return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${devise}`;
+  const neg = n < 0;
+  const [entier, dec = '00'] = Math.abs(n).toFixed(2).split('.');
+  const groupe = entier.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const nombre = dec === '00' ? groupe : `${groupe},${dec}`;
+  return `${neg ? '-' : ''}${nombre} ${devise}`;
 };
 
 module.exports = { creerDocument, finaliser, titreDocument, ligneCleValeur, encadreMontant, formatMontant, BLEU, GRIS, GRIS_FONCE };

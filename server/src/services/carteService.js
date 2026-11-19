@@ -145,17 +145,35 @@ function dessinerRecto(doc, { x, y, w, h, eleve, ecole, anneeLibelle, photoPath,
   const logoW = logoH; // approximatif (carré)
   placerEcoleLogo(doc, { x: x + w - pad - logoW, y: y + 6, h: logoH, logoPath });
 
-  // --- SCHOOL VIE (nom de l'école, centré)
+  // --- Nom de l'école (taille adaptée pour tenir sur UNE ligne, centré) ---
   const nomEcole = String(ecole?.nom || 'SCHOOL VIE').toUpperCase();
-  doc.fillColor(BLEU_TITRE).font('Helvetica-Bold').fontSize(13)
-    .text(nomEcole, x + pad, y + 34, { width: w - pad * 2, align: 'center', characterSpacing: 1.1, lineBreak: false });
+  const largeurDispo = w - pad * 2;
+  const CHAR_SPACING_NOM = 0.8;
+  let tailleNom = 13;
+  doc.font('Helvetica-Bold').fontSize(tailleNom);
+  while (tailleNom > 6.5) {
+    const wNom = doc.widthOfString(nomEcole) + nomEcole.length * CHAR_SPACING_NOM;
+    if (wNom <= largeurDispo) break;
+    tailleNom -= 0.5;
+    doc.fontSize(tailleNom);
+  }
+  doc.fillColor(BLEU_TITRE).font('Helvetica-Bold').fontSize(tailleNom)
+    .text(nomEcole, x + pad, y + 34, { width: largeurDispo, align: 'center', characterSpacing: CHAR_SPACING_NOM, lineBreak: false, ellipsis: true });
 
-  // --- Ligne coordonnées (BP / Tél / ville - pays)
+  // --- Ligne coordonnées (BP / Tél / ville - pays) — taille adaptée aussi ---
   const bp = ecole?.bp || '.........';
   const tel = ecole?.telephone || '.........';
   const lieu = [ecole?.ville || 'Lomé', ecole?.pays || 'TOGO'].join(' - ');
-  doc.fillColor(GRIS).font('Helvetica-Bold').fontSize(6.1)
-    .text(`BP : ${bp}     Tél : ${tel}     •  ${lieu}`, x + pad, y + 50, { width: w - pad * 2, align: 'center', lineBreak: false });
+  const ligneCoord = `BP : ${bp}     Tél : ${tel}     •  ${lieu}`;
+  let tailleCoord = 6.1;
+  doc.font('Helvetica-Bold').fontSize(tailleCoord);
+  while (tailleCoord > 4.6) {
+    if (doc.widthOfString(ligneCoord) <= largeurDispo) break;
+    tailleCoord -= 0.25;
+    doc.fontSize(tailleCoord);
+  }
+  doc.fillColor(GRIS).font('Helvetica-Bold').fontSize(tailleCoord)
+    .text(ligneCoord, x + pad, y + 50, { width: largeurDispo, align: 'center', lineBreak: false, ellipsis: true });
 
   // --- Séparateur teal
   doc.moveTo(x + pad, y + 60).lineTo(x + w - pad, y + 60).lineWidth(1.4).strokeColor(TEAL).stroke();

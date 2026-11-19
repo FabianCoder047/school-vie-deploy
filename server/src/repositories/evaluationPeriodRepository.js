@@ -48,6 +48,12 @@ async function remove(id) {
 /** Fenêtre de saisie courante pour la période (null si non ouverte). */
 function fenetreSaisie(periode) {
   if (!periode) return { ouverte: false, motif: 'Période introuvable.' };
+  // Une période sans fenêtre de saisie définie est FERMÉE par défaut :
+  // le Directeur ouvre la saisie explicitement (et une seule période peut
+  // être ouverte à la fois — la validation chevauchement est côté service).
+  if (!periode.saisie_debut && !periode.saisie_fin) {
+    return { ouverte: false, motif: 'Fenêtre de saisie non définie — la saisie des notes est fermée par défaut.' };
+  }
   const maintenant = new Date();
   if (periode.saisie_debut && new Date(periode.saisie_debut) > maintenant) {
     return { ouverte: false, motif: `La saisie ouvre le ${new Date(periode.saisie_debut).toLocaleString('fr-FR')}.`, ouverture: periode.saisie_debut, fermeture: periode.saisie_fin };

@@ -5,6 +5,7 @@ const controller = require('../controllers/referentielController');
 const aff = require('../controllers/affectationController');
 const settings = require('../controllers/settingsAndDashboardController');
 const pedagogie = require('../controllers/pedagogieController');
+const documents = require('../controllers/documentEtCommuniqueController');
 
 const router = express.Router();
 
@@ -21,5 +22,8 @@ router.get('/alias/classe/:classId', aff.listerAliasDeClasse);
 router.get('/parametres', settings.lireParametres);
 // Lecture des périodes (fenêtres de saisie visibles par les professeurs)
 router.get('/periodes', pedagogie.listerPeriodes);
+// Communiqués pour le tableau de bord de l'utilisateur connecté :
+// pilotage (ADMIN/DIRECTEUR/SECRETAIRE) → tout ; autres rôles → ceux qui les concernent.
+router.get('/communiques', documents.listerCommuniquesPourMoi);
 
 module.exports = router;

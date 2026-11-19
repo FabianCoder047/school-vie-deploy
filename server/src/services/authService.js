@@ -16,6 +16,8 @@ const userRepo = require('../repositories/userRepository');
 const refreshRepo = require('../repositories/refreshTokenRepository');
 const resetRepo = require('../repositories/passwordResetRepository');
 const audit = require('../repositories/auditRepository');
+// Lecture de la fenêtre de maintenance (blocage login/refresh des non-admins).
+const maintenanceService = require('./maintenanceService');
 const { sendMail } = require('../config/mailer');
 const { welcomeCredentialsTemplate } = require('../templates/welcomeCredentialsTemplate');
 const { resetPasswordTemplate } = require('../templates/resetPasswordTemplate');
@@ -98,6 +100,15 @@ async function login(identifier, password, req) {
     throw ApiError.forbidden('Ce compte est désactivé. Contactez votre établissement.', 'ACCOUNT_DISABLED');
   }
 
+  // Maintenance : seul l'administrateur peut se connecter.
+  if (user.role !== 'ADMIN' && (await maintenanceService.estActive())) {
+    await audit.log({ userId: user.id, action: 'MAINTENANCE_LOGIN_BLOCKED', ipAddress: req?.ip });
+    throw ApiError.serviceUnavailable(
+      'Le site est actuellement en maintenance. Seul l’administrateur peut se connecter — réessayez à la fin de la maintenance.',
+      'MAINTENANCE'
+    );
+  }
+
   await userRepo.resetFailedLogin(user.id);
   await audit.log({ userId: user.id, action: 'LOGIN', ipAddress: req?.ip });
 
@@ -111,10 +122,21 @@ async function refresh(refreshTokenRaw, req) {
   const found = await refreshRepo.findValidByHash(tokenHash);
   if (!found) throw ApiError.unauthorized('Session expirée. Veuillez vous reconnecter.', 'REFRESH_INVALID');
   if (!found.is_active) throw ApiError.forbidden('Ce compte est désactivé.', 'ACCOUNT_DISABLED');
+  const existingUser = await userRepo.findById(found.user_id);
+  if (!existingUser) throw ApiError.unauthorized('Session expirée. Veuillez vous reconnecter.', 'REFRESH_INVALID');
+
+  // Maintenance : le refresh est réservé à l'administrateur.
+  if (existingUser.role !== 'ADMIN' && (await maintenanceService.estActive())) {
+    await audit.log({ userId: existingUser.id, action: 'MAINTENANCE_REFRESH_BLOCKED', ipAddress: req?.ip });
+    throw ApiError.serviceUnavailable(
+      'Le site est actuellement en maintenance. Seul l’administrateur peut se connecter.',
+      'MAINTENANCE'
+    );
+  }
 
   // Rotation : l'ancien token est révoqué, un nouveau est émis.
   await refreshRepo.revokeByHash(tokenHash);
-  const user = await userRepo.findById(found.user_id);
+  const user = existingUser;
   const tokens = await issueTokenPair(user, req);
   return { ...tokens, user: publicUser(user) };
 }

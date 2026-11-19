@@ -1,8 +1,9 @@
 // Notes de l'enfant — consultation en LECTURE SEULE.
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import api, { messageErreur } from '../../api/axios';
 import { useEnfants, EnfantSelect } from './useEnfants.jsx';
+import { formatRang } from '../../utils/rang';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Select from '../../components/Select';
@@ -80,21 +81,27 @@ export default function NotesPage() {
               <div><div className="stat-card-label">Moyenne générale</div><div className="stat-card-valeur">{fiche.moyenneGenerale !== null ? fiche.moyenneGenerale.toFixed(2) : '—'}</div><div className="stat-card-detail">{fiche.appreciation || ''}</div></div>
             </div>
             <div className="stat-card">
-              <div><div className="stat-card-label">Rang</div><div className="stat-card-valeur">{fiche.rang ?? '—'}<span style={{ fontSize: 13, color: 'var(--texte-doux)' }}> / {fiche.effectif}</span></div><div className="stat-card-detail">Moyenne classe : {fiche.moyenneClasse?.toFixed(2) ?? '—'}</div></div>
+              <div><div className="stat-card-label">Rang</div><div className="stat-card-valeur">{formatRang(fiche.rang)}</div><div className="stat-card-detail">Effectif : {fiche.effectif} · Moyenne classe : {fiche.moyenneClasse?.toFixed(2) ?? '—'}</div></div>
             </div>
             <div className="stat-card">
-              <div><div className="stat-card-label">Absences</div><div className="stat-card-valeur">{fiche.absences}</div><div className="stat-card-detail">séance{fiche.absences > 1 ? 's' : ''}</div></div>
+              <div><div className="stat-card-label">Absences</div><div className="stat-card-valeur">{fiche.absences}</div><div className="stat-card-detail">{fiche.absencesJustifiees ?? 0} justifiée{(fiche.absencesJustifiees ?? 0) > 1 ? 's' : ''} · {fiche.absencesNonJustifiees ?? 0} non justifiée{(fiche.absencesNonJustifiees ?? 0) > 1 ? 's' : ''}</div></div>
             </div>
             <div className="stat-card">
               <div><div className="stat-card-label">Retards</div><div className="stat-card-valeur">{fiche.retards}</div><div className="stat-card-detail">{fiche.retardMinutes} min au total</div></div>
             </div>
           </div>
 
+          {/* ===== Lien vers le détail des absences ===== */}
+          <div className="flex-between mb-4" style={{ gap: 12, flexWrap: 'wrap' }}>
+            <span className="text-doux" style={{ fontSize: 13 }}>Les absences non justifiées peuvent être prises en compte lors du conseil de discipline.</span>
+            <Link className="btn btn-outline btn-sm" to={`/parent/absences?enfant=${enfantId}`}>Absences & envoyer un motif →</Link>
+          </div>
+
           {/* ===== Notes par matière ===== */}
           <div className="table-conteneur">
             <table className="tableau" style={{ minWidth: 560 }}>
               <thead>
-                <tr><th>Matière</th><th>Coef</th><th>Interro</th><th>Devoir</th><th>Compo</th><th>Moyenne</th></tr>
+                <tr><th>Matière</th><th>Coef</th><th>Interro</th><th>Devoir</th><th>Compo</th><th>Moyenne</th><th>Rang</th></tr>
               </thead>
               <tbody>
                 {fiche.matieres.map((m) => (
@@ -107,6 +114,7 @@ export default function NotesPage() {
                     <td style={{ fontWeight: 800, color: m.moyenne == null ? 'var(--gris-400)' : m.moyenne >= 10 ? 'var(--vert-700)' : 'var(--rouge-700)' }}>
                       {m.moyenne?.toFixed(2) ?? '—'}
                     </td>
+                    <td>{formatRang(m.rang)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,0 +1,175 @@
+/* =====================================================================
+   Page de maintenance — affichée à tout le monde SAUF l'administrateur.
+   ===================================================================== */
+.maintenance-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espace-5);
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(59, 130, 246, 0.35), transparent 60%),
+    radial-gradient(1000px 500px at 110% 110%, rgba(240, 174, 11, 0.22), transparent 55%),
+    linear-gradient(160deg, #141a3d 0%, #1f2766 45%, #232c6e 100%);
+  color: #eef1ff;
+  overflow: hidden;
+  position: relative;
+}
+
+.maintenance-orbe {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.maintenance-orbe--1 { width: 380px; height: 380px; background: #2563eb; top: -90px; left: -120px; animation: maintenance-derive 16s ease-in-out infinite alternate; }
+.maintenance-orbe--2 { width: 300px; height: 300px; background: #f0ae0b; bottom: -80px; right: -90px; animation: maintenance-derive 20s ease-in-out infinite alternate-reverse; }
+
+@keyframes maintenance-derive {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(40px, 30px, 0) scale(1.08); }
+}
+
+.maintenance-carte {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  padding: 40px 36px 32px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 30px 70px rgba(3, 6, 25, 0.55);
+  backdrop-filter: blur(10px);
+  animation: maintenance-apparition 0.6s ease both;
+}
+
+@keyframes maintenance-apparition {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.maintenance-outils {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto var(--espace-4);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: maintenance-flotte 3.5s ease-in-out infinite;
+}
+.maintenance-outils svg { width: 40px; height: 40px; stroke: #ffd84d; }
+
+@keyframes maintenance-flotte {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.maintenance-logo {
+  width: 74px;
+  height: auto;
+  margin: 0 auto var(--espace-3);
+  display: block;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+}
+
+.maintenance-ecole {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9fb0ff;
+  margin-bottom: var(--espace-2);
+}
+
+.maintenance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #1a1a1a;
+  background: #ffd84d;
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin-bottom: var(--espace-3);
+}
+.maintenance-badge-point {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d92c1d;
+  animation: maintenance-clignote 1.2s ease-in-out infinite;
+}
+@keyframes maintenance-clignote {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.maintenance-titre {
+  font-size: 30px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: var(--espace-3);
+  line-height: 1.15;
+}
+
+.maintenance-message {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #ccd4ff;
+  margin-bottom: var(--espace-4);
+}
+
+.maintenance-periode {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #e8ebff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: var(--espace-4);
+}
+.maintenance-periode strong { color: #ffd84d; font-weight: 700; }
+
+.maintenance-note {
+  font-size: 12.5px;
+  color: #8f9bd6;
+  margin-bottom: var(--espace-4);
+}
+
+.maintenance-pied {
+  margin-top: var(--espace-4);
+  font-size: 11px;
+  color: #6f7bb8;
+  letter-spacing: 0.05em;
+}
+
+/* Bandeau visible de l'administrateur quand la maintenance est active */
+.bandeau-maintenance {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #2b1d05;
+  color: #ffd84d;
+  font-size: 13px;
+  padding: 8px var(--espace-5);
+  border-bottom: 1px solid rgba(255, 216, 77, 0.35);
+}
+.bandeau-maintenance a {
+  color: #ffe89a;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.bandeau-maintenance svg { flex-shrink: 0; }

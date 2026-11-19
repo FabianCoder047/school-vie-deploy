@@ -27,3 +27,5 @@ export const IconMessage = () => <svg {...base()}><path d="M21 15a2 2 0 0 1-2 2H
 export const IconNote = () => <svg {...base()}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>;
 export const IconLogout = () => <svg {...base()}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>;
 export const IconUser = () => <svg {...base()}><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>;
+export const IconMenu = () => <svg {...base()}><path d="M4 7h16M4 12h16M4 17h16"/></svg>;
+export const IconMaintenance = () => <svg {...base()}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>;

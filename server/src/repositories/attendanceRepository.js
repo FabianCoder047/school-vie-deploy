@@ -22,13 +22,18 @@ async function createSession({ teacher_assignment_id, timetable_slot_id, date_co
   return result.insertId;
 }
 
-async function upsertRecord({ session_id, enrollment_id, statut, minutes_retard, justification }, conn) {
+async function upsertRecord({ session_id, enrollment_id, statut, minutes_retard, justification, justification_statut, justification_par, justification_at }, conn) {
   const db = conn || pool;
   await db.query(
-    `INSERT INTO attendance_records (session_id, enrollment_id, statut, minutes_retard, justification)
-     VALUES (?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE statut = VALUES(statut), minutes_retard = VALUES(minutes_retard), justification = VALUES(justification)`,
-    [session_id, enrollment_id, statut, minutes_retard ?? null, justification ?? null]
+    `INSERT INTO attendance_records
+       (session_id, enrollment_id, statut, minutes_retard, justification, justification_statut, justification_par, justification_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       statut = VALUES(statut), minutes_retard = VALUES(minutes_retard),
+       justification = VALUES(justification), justification_statut = VALUES(justification_statut),
+       justification_par = VALUES(justification_par), justification_at = VALUES(justification_at)`,
+    [session_id, enrollment_id, statut, minutes_retard ?? null, justification ?? null,
+     justification_statut ?? 'NON_JUSTIFIEE', justification_par ?? null, justification_at ?? null]
   );
 }
 
@@ -41,6 +46,7 @@ async function deleteRecordsForSession(sessionId, conn) {
 async function listRecords(sessionId) {
   const [rows] = await pool.query(
     `SELECT ar.id, ar.enrollment_id, ar.statut, ar.minutes_retard, ar.justification,
+            ar.justification_statut, ar.justification_par, ar.justification_at,
             s.matricule, s.nom, s.prenom
        FROM attendance_records ar
        JOIN enrollments e ON e.id = ar.enrollment_id
@@ -48,6 +54,24 @@ async function listRecords(sessionId) {
       WHERE ar.session_id = ?
       ORDER BY s.nom, s.prenom`,
     [sessionId]
+  );
+  return rows;
+}
+
+/** Records ABSENT/RETARD d'un élève (fiche absences prof/directeur/parent). */
+async function listAbsencesEleve(enrollmentId) {
+  const [rows] = await pool.query(
+    `SELECT ar.id, ar.statut, ar.minutes_retard, ar.justification,
+            ar.justification_statut, ar.justification_par, ar.justification_at,
+            ats.date_cours, ats.heure_debut, s.nom AS matiere_nom
+       FROM attendance_records ar
+       JOIN attendance_sessions ats ON ats.id = ar.session_id
+       JOIN teacher_assignments ta ON ta.id = ats.teacher_assignment_id
+       JOIN class_subjects cs ON cs.id = ta.class_subject_id
+       JOIN subjects s ON s.id = cs.subject_id
+      WHERE ar.enrollment_id = ? AND ar.statut IN ('ABSENT','RETARD')
+      ORDER BY ats.date_cours DESC, ats.heure_debut DESC`,
+    [enrollmentId]
   );
   return rows;
 }
@@ -71,4 +95,4 @@ async function listRecentSessions(teacherAssignmentIds, limit = 30) {
   return rows;
 }
 
-module.exports = { findSession, createSession, upsertRecord, deleteRecordsForSession, listRecords, listRecentSessions };
+module.exports = { findSession, createSession, upsertRecord, deleteRecordsForSession, listRecords, listAbsencesEleve, listRecentSessions };

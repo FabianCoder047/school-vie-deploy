@@ -8,6 +8,7 @@ const { log: audit } = require('../repositories/auditRepository');
 const logger = require('../utils/logger');
 
 const TYPES_CIBLES = ['TOUS', 'ROLE', 'CYCLE', 'CLASSE', 'ALIAS'];
+const ROLES = ['ADMIN', 'DIRECTEUR', 'SECRETAIRE', 'COMPTABLE', 'PROFESSEUR', 'PARENT'];
 
 /** Publie un communiqué : crée l'annonce, ses cibles et les notifications. */
 async function publier({ titre, contenu, cibles }, actorId, ip) {
@@ -22,7 +23,7 @@ async function publier({ titre, contenu, cibles }, actorId, ip) {
     if (!TYPES_CIBLES.includes(cible.target_type)) {
       throw ApiError.badRequest('Type de cible invalide.', 'CIBLE_INVALIDE');
     }
-    if (cible.target_type === 'ROLE' && !['SECRETAIRE', 'COMPTABLE', 'PROFESSEUR', 'PARENT'].includes(cible.role)) {
+    if (cible.target_type === 'ROLE' && !ROLES.includes(cible.role)) {
       throw ApiError.badRequest('Rôle de cible invalide.', 'ROLE_CIBLE_INVALIDE');
     }
     if (cible.target_type === 'CYCLE' && !cible.cycle_id) throw ApiError.badRequest('Cycle requis.', 'CIBLE_INCOMPLETE');
@@ -94,4 +95,12 @@ async function listerCommuniques() {
   return announcementRepo.listAll();
 }
 
-module.exports = { publier, listerCommuniques };
+/** Communiqués pour le tableau de bord de l'utilisateur : pilotage → tout ; autres rôles → ceux qui les concernent. */
+async function listerPourMoi(user) {
+  if (user?.role === 'ADMIN' || user?.role === 'DIRECTEUR' || user?.role === 'SECRETAIRE') {
+    return announcementRepo.listAll();
+  }
+  return announcementRepo.listForUser(user);
+}
+
+module.exports = { publier, listerCommuniques, listerPourMoi };

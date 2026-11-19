@@ -1,5 +1,6 @@
 // Enregistrer un paiement de scolarité : rechercher l'élève, voir sa
-// situation, encaisser (ventilation automatique) + reçu PDF.
+// situation, encaisser (ventilation automatique) ; le reçu est rempli à la
+// main et scanné ensuite (preuve PDF/photo) — l'app ne génère pas de PDF de reçu.
 import { useEffect, useState } from 'react';
 import api, { messageErreur } from '../../api/axios';
 import { useToast } from '../../hooks/useToast';
@@ -9,7 +10,7 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
-import ApercuPdf from '../../components/ApercuPdf';
+import UploadPreuveRecu from '../../components/UploadPreuveRecu';
 
 const MOYEN_LIB = { ESPECES: 'Espèces', FLOOZ: 'Flooz', MIXX_BY_YAS: 'Mixx By Yas' };
 const STATUT_SCOLARITE = {
@@ -28,7 +29,6 @@ export default function PaiementsPage() {
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [dernierPaiement, setDernierPaiement] = useState(null);
-  const [apercuPdf, setApercuPdf] = useState(null); // { url, titre }
   const [form, setForm] = useState({ montant: '', moyen: 'ESPECES', reference_transaction: '', date_paiement: '' });
 
   useEffect(() => {
@@ -186,9 +186,14 @@ export default function PaiementsPage() {
                 <p className="mt-4" style={{ fontSize: 18 }}><strong>Reste à payer : <span style={{ color: Number(situation.reste) > 0 ? 'var(--rouge-700)' : 'var(--vert-700)' }}>{Number(situation.reste).toLocaleString('fr-FR')} FCFA</span></strong></p>
                 {dernierPaiement && (
                   <div className="auth-succes mt-4" role="status">
-                    Paiement {dernierPaiement.numero_recu} enregistré.
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" variant="success" onClick={() => setApercuPdf({ url: `/comptable/paiements/${dernierPaiement.id}/recu`, titre: `Reçu ${dernierPaiement.numero_recu}` })}>Aperçu du reçu</Button>
+                    Paiement {dernierPaiement.numero_recu} enregistré. Remettez le reçu rempli à la main ; joignez-en le scan ci-dessous (preuve « en cas de quoi »).
+                    <div className="flex gap-2 mt-4" style={{ flexWrap: 'wrap' }}>
+                      <UploadPreuveRecu
+                        base="/comptable"
+                        paymentId={dernierPaiement.id}
+                        preuve={dernierPaiement.justificatif_chemin ?? null}
+                        onChange={(chemin) => setDernierPaiement((p) => (p ? { ...p, justificatif_chemin: chemin } : p))}
+                      />
                       <Button size="sm" variant="ghost" onClick={ouvrirAnnulation}>Annuler ce paiement</Button>
                     </div>
                   </div>
@@ -211,14 +216,11 @@ export default function PaiementsPage() {
               <Button type="submit" className="mt-6 w-100" disabled={envoi || Number(situation?.reste || 0) <= 0}>
                 {envoi ? 'Enregistrement…' : Number(situation?.reste || 0) <= 0 ? 'Compte soldé' : 'Enregistrer le paiement'}
               </Button>
-              <p className="text-doux mt-4" style={{ fontSize: 12 }}>La ventilation sur les échéances est automatique (les plus anciennes d’abord). Le reçu porte un numéro séquentiel unique.</p>
+              <p className="text-doux mt-4" style={{ fontSize: 12 }}>La ventilation sur les échéances est automatique (les plus anciennes d’abord). Le reçu porte un numéro séquentiel unique ; il se remplit à la main — joignez le scan en preuve.</p>
             </form>
           </Card>
         </div>
       )}
-
-      {/* Aperçu du reçu dans l'application */}
-      {apercuPdf && <ApercuPdf titre={apercuPdf.titre} url={apercuPdf.url} onFermer={() => setApercuPdf(null)} />}
     </>
   );
 }

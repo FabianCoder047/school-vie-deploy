@@ -59,7 +59,7 @@ export default function DashboardDirecteur() {
         <StatCard label="Recouvrement" valeur={`${donnees.recouvrement} %`} tonalite="rouge"><IconCash /></StatCard>
       </div>
       <div className="grid-4 mb-4">
-        <StatCard label="Absences (mois)" valeur={donnees.absencesMois} tonalite="rouge"><IconAlert /></StatCard>
+        <StatCard label="Absences (mois)" valeur={donnees.absencesMois} detail={`${donnees.absencesJustifieesMois ?? 0} justifiée(s) · ${donnees.absencesNonJustifieesMois ?? 0} non justifiée(s)`} tonalite="rouge"><IconAlert /></StatCard>
         <StatCard label="Retards (mois)" valeur={donnees.retardsMois} tonalite="jaune"><IconClock /></StatCard>
       </div>
 

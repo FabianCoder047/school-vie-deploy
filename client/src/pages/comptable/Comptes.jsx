@@ -13,6 +13,7 @@ import FilterBar from '../../components/FilterBar';
 import SelectFiltre from '../../components/SelectFiltre';
 import Modal from '../../components/Modal';
 import ApercuPdf from '../../components/ApercuPdf';
+import UploadPreuveRecu from '../../components/UploadPreuveRecu';
 
 const STATUT_SCOLARITE = {
   SOLDE: { couleur: 'vert', label: 'Soldé' },
@@ -192,7 +193,7 @@ function DetailCompteModal({ detailId, onFermer }) {
           {situation.payments.length === 0 ? <p className="text-doux">Aucun paiement enregistré.</p> : (
             <div className="table-conteneur" style={{ maxHeight: 200 }}>
               <table className="tableau" style={{ minWidth: 460 }}>
-                <thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Moyen</th><th>Reçu</th><th>Statut</th></tr></thead>
+                <thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Moyen</th><th>Reçu</th><th>Preuve</th><th>Statut</th></tr></thead>
                 <tbody>
                   {situation.payments.map((p) => (
                     <tr key={p.id}>
@@ -200,7 +201,19 @@ function DetailCompteModal({ detailId, onFermer }) {
                       <td>{p.type === 'INSCRIPTION' ? 'Inscription' : 'Scolarité'}</td>
                       <td>{Number(p.montant).toLocaleString('fr-FR')}</td>
                       <td>{MOYEN_LIB[p.moyen] || p.moyen}</td>
-                      <td><button type="button" className="btn btn-ghost btn-sm" onClick={() => setApercuPdf({ url: `/comptable/paiements/${p.id}/recu`, titre: `Reçu ${p.numero_recu}` })}>{p.numero_recu}</button></td>
+                      <td><code>{p.numero_recu}</code></td>
+                      <td>
+                        <UploadPreuveRecu
+                          base="/comptable"
+                          paymentId={p.id}
+                          compact
+                          preuve={p.justificatif_chemin ?? null}
+                          onChange={(chemin) => setSituation((s) => (s ? {
+                            ...s,
+                            payments: s.payments.map((x) => (x.id === p.id ? { ...x, justificatif_chemin: chemin } : x)),
+                          } : s))}
+                        />
+                      </td>
                       <td><Badge couleur={p.statut === 'VALIDE' ? 'vert' : 'rouge'}>{p.statut === 'VALIDE' ? 'Validé' : 'Annulé'}</Badge></td>
                     </tr>
                   ))}

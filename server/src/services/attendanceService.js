@@ -9,6 +9,7 @@ const { ApiError } = require('../utils/ApiError');
 const { log: audit } = require('../repositories/auditRepository');
 const attendanceRepo = require('../repositories/attendanceRepository');
 const notificationRepo = require('../repositories/notificationRepository');
+const { waLink } = require('../utils/waLink');
 
 const JOUR_SEMAINE = () => {
   // JS : 0=dimanche … 6=samedi ; schéma : 1=lundi … 7=dimanche
@@ -85,7 +86,9 @@ async function enregistrerAppel({ teacherAssignmentId, timetableSlotId, dateCour
     var anciensRecords = [];
     if (session) {
       const [rowsAnciens] = await conn.query(
-        'SELECT enrollment_id, statut, minutes_retard FROM attendance_records WHERE session_id = ?',
+        `SELECT enrollment_id, statut, minutes_retard,
+                justification, justification_statut, justification_par, justification_at
+           FROM attendance_records WHERE session_id = ?`,
         [session.id]
       );
       anciensRecords = rowsAnciens;
@@ -97,14 +100,40 @@ async function enregistrerAppel({ teacherAssignmentId, timetableSlotId, dateCour
       );
       session = { id };
     }
+    const anciensParEleve = new Map(anciensRecords.map((r) => [r.enrollment_id, r]));
     for (const record of records) {
+      // --- Justification : le professeur décide explicitement via l'UI ---
+      // (sinon on préserve le motif existant — par ex. envoyé par le parent).
+      let justif = { statut: 'NON_JUSTIFIEE', note: null, par: null, at: null };
+      if (record.statut === 'ABSENT' || record.statut === 'RETARD') {
+        const ancien = anciensParEleve.get(record.enrollment_id);
+        const demandeNote = typeof record.justification_note === 'string' ? record.justification_note.trim() || null : undefined;
+        if (record.justification_statut === 'JUSTIFIEE' || record.justification_statut === 'NON_JUSTIFIEE') {
+          const note = demandeNote === undefined ? (ancien?.justification ?? null) : demandeNote;
+          const inchangee = ancien
+            && ancien.justification_statut === record.justification_statut
+            && (ancien.justification ?? null) === note;
+          if (inchangee) {
+            justif = { statut: ancien.justification_statut, note: ancien.justification ?? null, par: ancien.justification_par, at: ancien.justification_at };
+          } else if (record.justification_statut === 'JUSTIFIEE') {
+            justif = { statut: 'JUSTIFIEE', note, par: 'PROFESSEUR', at: new Date() };
+          } else {
+            justif = { statut: 'NON_JUSTIFIEE', note: null, par: null, at: null };
+          }
+        } else if (ancien) {
+          justif = { statut: ancien.justification_statut, note: ancien.justification ?? null, par: ancien.justification_par, at: ancien.justification_at };
+        }
+      }
       // eslint-disable-next-line no-await-in-loop
       await attendanceRepo.upsertRecord({
         session_id: session.id,
         enrollment_id: record.enrollment_id,
         statut: record.statut,
         minutes_retard: record.statut === 'RETARD' ? Math.round(Number(record.minutes_retard)) : null,
-        justification: record.justification?.trim() || null,
+        justification: justif.note,
+        justification_statut: justif.statut,
+        justification_par: justif.par,
+        justification_at: justif.at,
       }, conn);
     }
     const sessionId = session.id;
@@ -118,11 +147,17 @@ async function enregistrerAppel({ teacherAssignmentId, timetableSlotId, dateCour
     conn.release();
   }
 
-  // Post-commit : notifications uniquement pour les NOUVEAUX absents/retards
+  // Post-commit : notifications UNIQUEMENT pour les NOUVEAUX absents/retards
   // (rejouer le même appel ne re-notifie pas — idempotence jour même).
+  // En plus de la notification interne (compte parent si existant), on
+  // pré-remplit un lien wa.me par parent concerné (envoi manuel, zéro coût) —
+  // valable même pour les tuteurs SANS compte School Vie.
+  const waLiens = [];
+  let nbNotifications = 0;
   try {
     const details = detailsPourNotifs;
     const anciens = new Map(anciensRecords.map((r) => [r.enrollment_id, r]));
+    const dateFr = new Date(dateCours).toLocaleDateString('fr-FR');
     for (const record of records) {
       if (record.statut === 'PRESENT') continue;
       const ancien = anciens.get(record.enrollment_id);
@@ -133,7 +168,8 @@ async function enregistrerAppel({ teacherAssignmentId, timetableSlotId, dateCour
       if (inchange) continue; // déjà notifié lors d'une saisie précédente
       const [[row]] = await pool.query(
         `SELECT s.nom AS eleve_nom, s.prenom AS eleve_prenom, s.matricule,
-                g.user_id AS parent_user_id, u.prenom AS parent_prenom
+                g.user_id AS parent_user_id, g.prenom AS tuteur_prenom, g.telephone_whatsapp AS tuteur_whatsapp,
+                u.prenom AS parent_prenom
            FROM enrollments e
            JOIN students s ON s.id = e.student_id
            JOIN guardians g ON g.id = s.guardian_id
@@ -141,20 +177,47 @@ async function enregistrerAppel({ teacherAssignmentId, timetableSlotId, dateCour
           WHERE e.id = ?`,
         [record.enrollment_id]
       );
-      if (!row?.parent_user_id) continue;
+      if (!row) continue;
       const type = record.statut === 'ABSENT' ? 'ABSENCE' : 'RETARD';
       const titre = record.statut === 'ABSENT' ? 'Absence de votre enfant' : 'Retard de votre enfant';
       const message = record.statut === 'ABSENT'
-        ? `${row.eleve_prenom} ${row.eleve_nom} (${row.matricule}) était absent(e) le ${new Date(dateCours).toLocaleDateString('fr-FR')} en ${details.matiere_nom}.`
-        : `${row.eleve_prenom} ${row.eleve_nom} (${row.matricule}) est arrivé(e) avec ${Math.round(Number(record.minutes_retard))} minute(s) de retard le ${new Date(dateCours).toLocaleDateString('fr-FR')} en ${details.matiere_nom}.`;
-      // eslint-disable-next-line no-await-in-loop
-      await notificationRepo.create({
-        user_id: row.parent_user_id,
-        type,
-        titre,
-        message,
-        data: { enrollmentId: record.enrollment_id, sessionId: sessionFinalId, dateCours, matiere: details.matiere_nom },
-      });
+        ? `${row.eleve_prenom} ${row.eleve_nom} (${row.matricule}) était absent(e) le ${dateFr} en ${details.matiere_nom}.`
+        : `${row.eleve_prenom} ${row.eleve_nom} (${row.matricule}) est arrivé(e) avec ${Math.round(Number(record.minutes_retard))} minute(s) de retard le ${dateFr} en ${details.matiere_nom}.`;
+
+      // Notification interne (si le tuteur a un compte parent)
+      if (row.parent_user_id) {
+        // eslint-disable-next-line no-await-in-loop
+        await notificationRepo.create({
+          user_id: row.parent_user_id,
+          type,
+          titre,
+          message,
+          data: { enrollmentId: record.enrollment_id, sessionId: sessionFinalId, dateCours, matiere: details.matiere_nom },
+        });
+        nbNotifications += 1;
+      }
+
+      // Lien WhatsApp pré-rempli (envoi manuel par le professeur — même
+      // principe que les relances ; le motif se donne dans l'application).
+      if (row.tuteur_whatsapp) {
+        const motif = record.statut === 'ABSENT'
+          ? 'Si un motif explique cette absence'
+          : 'Si un motif justifie ce retard';
+        const texteWa = `Bonjour ${row.tuteur_prenom}, l’école vous informe que ${row.eleve_prenom} ${row.eleve_nom} (${row.matricule}) `
+          + (record.statut === 'ABSENT'
+            ? `était absent(e) le ${dateFr} en ${details.matiere_nom}.`
+            : `est arrivé(e) avec ${Math.round(Number(record.minutes_retard))} minute(s) de retard le ${dateFr} en ${details.matiere_nom}.`)
+          + `\n${motif}, répondez depuis votre espace School Vie → « Absences & motifs ».`;
+        waLiens.push({
+          enrollment_id: record.enrollment_id,
+          eleve: `${row.eleve_prenom} ${row.eleve_nom}`,
+          matricule: row.matricule,
+          type,
+          telephone: row.tuteur_whatsapp,
+          message: texteWa,
+          waLink: waLink(row.tuteur_whatsapp, texteWa),
+        });
+      }
     }
   } catch (err) {
     const logger = require('../utils/logger');
@@ -166,10 +229,10 @@ async function enregistrerAppel({ teacherAssignmentId, timetableSlotId, dateCour
     action: 'UPSERT_ATTENDANCE',
     entity: 'attendance_sessions',
     entityId: sessionFinalId,
-    newValues: { dateCours, nb: records.length, absences: records.filter((r) => r.statut === 'ABSENT').length, retards: records.filter((r) => r.statut === 'RETARD').length },
+    newValues: { dateCours, nb: records.length, absences: records.filter((r) => r.statut === 'ABSENT').length, retards: records.filter((r) => r.statut === 'RETARD').length, waLiens: waLiens.length },
     ipAddress: ip,
   });
-  return { sessionId: sessionFinalId, total: records.length };
+  return { sessionId: sessionFinalId, total: records.length, notifications: nbNotifications, wa: waLiens };
 }
 
 async function detailsSeance(teacherAssignmentId) {

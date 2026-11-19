@@ -36,6 +36,12 @@ router.get('/affectations-professeur', affectations.listerAffectationsProfesseur
 router.post('/affectations-professeur', validate(affectationProfesseurSchema), affectations.affecterProfesseur);
 router.delete('/affectations-professeur/:id', affectations.retirerAffectationProfesseur);
 
+/* ===== Feu vert du directeur (impression cartes / bulletins par la secrétaire) ===== */
+const impression = require('../controllers/impressionController');
+const { impressionSchema } = require('../validators/configurationValidators');
+router.put('/impressions/cartes', validate(impressionSchema), impression.basculerCartes);
+router.put('/impressions/bulletins', validate(impressionSchema), impression.basculerBulletins);
+
 /* Signature du directeur (dessinée dans l'app, souris ou doigt, ou uploadée si la main n'y arrive pas) */
 const directeurSignature = require('../controllers/directeurSignatureController');
 const { uploadSignature, uploadLogo, uploadCachet, multerErrorHandler } = require('../middlewares/upload');
@@ -62,6 +68,11 @@ router.put('/frais/groupe', validate(fraisGroupeSchema), frais.enregistrerGroupe
 
 /* Périodes d'évaluation + emploi du temps */
 router.use('/', pedagogie);
+
+/* Statistiques de présences + fiche absences d'un élève */
+const presenceStats = require('../controllers/presenceStatsController');
+router.get('/statistiques-presences', presenceStats.statistiques);
+router.get('/eleve/:enrollmentId/absences', presenceStats.absencesEleveDirecteur);
 
 /* Tableau de bord */
 router.get('/dashboard', settings.dashboardDirecteur);

@@ -1,13 +1,14 @@
 // Layout principal : Sidebar fixe (100vh) + Topbar (logo, « Espace … »,
 // cloche avec badge RÉEL + panneau déroulant, déconnexion) + contenu.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useMaintenance } from '../context/MaintenanceContext';
 import { useToast } from '../hooks/useToast';
 import api from '../api/axios';
 import { SIDEBAR_MENUS } from './sidebarMenu';
 import { ROLE_ESPACE } from '../routes/roleRoutes';
-import { IconBell, IconLogout } from './sidebarIcons';
+import { IconBell, IconLogout, IconMenu, IconMaintenance } from './sidebarIcons';
 import Badge from '../components/Badge';
 import logo from '../assets/logo.svg';
 
@@ -16,6 +17,7 @@ const TYPE_COULEUR = { COMMUNIQUE: 'bleu', SCOLARITE: 'vert', RELANCE: 'jaune', 
 
 export default function DashboardLayout() {
   const { user, deconnexion } = useAuth();
+  const { active: maintenanceActive } = useMaintenance();
   const toast = useToast();
   const navigate = useNavigate();
   const [panneauOuvert, setPanneauOuvert] = useState(false);
@@ -27,6 +29,17 @@ export default function DashboardLayout() {
   const panneauRef = useRef(null);
   const barreRef = useRef(null);
   const coquilleRef = useRef(null);
+  // Menu masqué/affiché sur TOUS les espaces (desktop + mobile) — persisté
+  const [menuMasque, setMenuMasque] = useState(() => {
+    try { return window.localStorage.getItem('school-vie.menu-masque') === '1'; } catch { return false; }
+  });
+  const toggleMenu = () => {
+    setMenuMasque((precedent) => {
+      const valeur = !precedent;
+      try { window.localStorage.setItem('school-vie.menu-masque', valeur ? '1' : '0'); } catch { /* ignore */ }
+      return valeur;
+    });
+  };
 
   const menu = SIDEBAR_MENUS[user?.role] || [];
 
@@ -57,11 +70,12 @@ export default function DashboardLayout() {
 
   // Barre d'onglets mobile/tablette : mesurer sa hauteur (elle dépend du
   // nombre d'items du rôle) pour éviter que le contenu passe dessous.
+  // Hauteur 0 lorsque le menu est masqué.
   useEffect(() => {
     const barre = barreRef.current;
     const coquille = coquilleRef.current;
     if (!barre || !coquille) return undefined;
-    const maj = () => coquille.style.setProperty('--hauteur-barre-basse', `${barre.offsetHeight}px`);
+    const maj = () => coquille.style.setProperty('--hauteur-barre-basse', `${menuMasque ? 0 : barre.offsetHeight}px`);
     maj();
     const observateur = new ResizeObserver(maj);
     observateur.observe(barre);
@@ -70,7 +84,7 @@ export default function DashboardLayout() {
       observateur.disconnect();
       window.removeEventListener('resize', maj);
     };
-  }, [menu.length]);
+  }, [menu.length, menuMasque]);
 
   // Fermer le panneau de notifications au clic extérieur / Échap.
   useEffect(() => {
@@ -114,7 +128,7 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="app-shell" ref={coquilleRef}>
+    <div className={`app-shell${menuMasque ? ' menu-masque' : ''}`} ref={coquilleRef}>
       {/* ===== Sidebar (fixe sur bureau, barre d'onglets en bas sur mobile/tablette) ===== */}
       <aside className="sidebar" aria-label="Navigation principale" ref={barreRef}>
         <div className="sidebar-logo">
@@ -146,10 +160,29 @@ export default function DashboardLayout() {
 
       {/* ===== Zone principale ===== */}
       <div className="zone-principale">
+        {user?.role === 'ADMIN' && maintenanceActive && (
+          <div className="bandeau-maintenance" role="status">
+            <IconMaintenance />
+            <span>Maintenance en cours — le site est invisible pour les autres utilisateurs.</span>
+            <Link to="/admin/maintenance">Gérer la maintenance</Link>
+          </div>
+        )}
         <header className="topbar">
-          <div className="topbar-espace">
-            <img src={logo} alt="" aria-hidden="true" />
-            <span>{ROLE_ESPACE[user?.role] || 'Espace'}</span>
+          <div className="flex" style={{ alignItems: 'center', gap: 'var(--espace-2)', minWidth: 0 }}>
+            <button
+              type="button"
+              className="topbar-menu-bouton"
+              onClick={toggleMenu}
+              aria-expanded={!menuMasque}
+              aria-label={menuMasque ? 'Afficher le menu' : 'Masquer le menu'}
+              title={menuMasque ? 'Afficher le menu' : 'Masquer le menu'}
+            >
+              <IconMenu />
+            </button>
+            <div className="topbar-espace">
+              <img src={logo} alt="Logo de l'établissement" />
+              <span>{ROLE_ESPACE[user?.role] || 'Espace'}</span>
+            </div>
           </div>
           <div className="topbar-droite" ref={panneauRef} style={{ position: 'relative' }}>
             <button
