@@ -56,16 +56,15 @@ function estPrimaire(nomCycle) {
 
 /** Fenêtres continues dans lesquelles un créneau doit tenir entièrement. */
 function plages(r, primaire) {
-  const list = [
+  return [
     { debut: r.debutJournee, fin: r.pause.debut, libelle: 'Matin' },
     {
       debut: r.pause.fin,
       fin: primaire ? r.finPrimaire : r.finMatin,
       libelle: primaire ? 'Reprise (primaire)' : 'Reprise',
     },
+    { debut: r.debutApresMidi, fin: r.finApresMidi, libelle: 'Après-midi' },
   ];
-  if (!primaire) list.push({ debut: r.debutApresMidi, fin: r.finApresMidi, libelle: 'Après-midi' });
-  return list;
 }
 
 /** Heures de début autorisées (multiple de la durée d'une heure de cours). */
@@ -95,6 +94,7 @@ function verifierCreneau({ debut, fin, primaire, r }) {
   const f = enMinutes(fin);
   if (f <= d) return { valide: false, code: 'FIN_AVANT_DEBUT', message: 'L’heure de fin doit être postérieure à l’heure de début.' };
 
+  const finMatinCycle = primaire ? r.finPrimaire : r.finMatin;
   const plage = plages(r, primaire).find((p) => d >= enMinutes(p.debut) && f <= enMinutes(p.fin));
   if (!plage) {
     if (d < enMinutes(r.debutJournee)) {
@@ -106,11 +106,20 @@ function verifierCreneau({ debut, fin, primaire, r }) {
     if (d >= enMinutes(r.pause.debut) && d < enMinutes(r.pause.fin)) {
       return { valide: false, code: 'DANS_PAUSE', message: `La pause va de ${r.pause.debut} à ${r.pause.fin} : aucun cours n’est autorisé.` };
     }
-    if (primaire && f > enMinutes(r.finPrimaire)) {
-      return { valide: false, code: 'APRES_FIN_PRIMAIRE', message: `Au primaire, les cours se terminent à ${r.finPrimaire}.` };
+    if (d >= enMinutes(finMatinCycle) && d < enMinutes(r.debutApresMidi)) {
+      return { valide: false, code: 'PAUSE_REPAS', message: `Les élèves rentrent à ${finMatinCycle} : le prochain cours commence à ${r.debutApresMidi}.` };
     }
-    if (!primaire && d >= enMinutes(r.finMatin) && d < enMinutes(r.debutApresMidi)) {
-      return { valide: false, code: 'PAUSE_REPAS', message: `Les élèves rentrent à ${r.finMatin} : le prochain cours commence à ${r.debutApresMidi}.` };
+    if (d < enMinutes(r.debutApresMidi) && f > enMinutes(finMatinCycle)) {
+      return {
+        valide: false,
+        code: primaire ? 'APRES_FIN_PRIMAIRE' : 'APRES_FIN_MATIN',
+        message: primaire
+          ? `Au primaire, les cours du matin se terminent à ${r.finPrimaire}.`
+          : `La matinée se termine à ${r.finMatin}.`,
+      };
+    }
+    if (d >= enMinutes(r.debutApresMidi) && f > enMinutes(r.finApresMidi)) {
+      return { valide: false, code: 'APRES_FIN_JOURNEE', message: `Les cours de l’après-midi se terminent à ${r.finApresMidi}.` };
     }
     return { valide: false, code: 'HORS_HORAIRE', message: 'Ce créneau sort des horaires de cours autorisés.' };
   }

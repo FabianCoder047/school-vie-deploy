@@ -42,7 +42,8 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [form, setForm] = useState({
-    teacher_assignment_id: '', jour_semaine: 2, heure_debut: '07:00', heure_fin: '09:45', nb_heures: 1, salle: '',
+    teacher_assignment_id: '', jour_semaine: 2, heure_debut: '07:00', heure_fin: '09:45',
+    periode: 'matin1', nb_heures: 1, salle: '',
   });
 
   // Feu vert du directeur pour l'impression par la secrétaire.
@@ -70,6 +71,26 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
   const duree = regles.dureeHeureMinutes || 55;
   const estPrimaire = Boolean(cycleId && config?.cyclesPrimaire?.map(Number).includes(Number(cycleId)));
   const segments = useMemo(() => segmentsDepuisRegles(regles, estPrimaire), [regles, estPrimaire]);
+
+  // Primaire : durée libre, mais bornes selon le moment de la journée.
+  const periodeDepuisHeure = (heure) => {
+    const t = enMinutes(heure);
+    if (t < enMinutes(regles.pause.debut)) return 'matin1';
+    if (t < enMinutes(regles.debutApresMidi)) return 'matin2';
+    return 'apresmidi';
+  };
+  const bornesPeriode = (periode) => {
+    if (periode === 'matin1') {
+      return { debutMin: regles.debutJournee, debutMax: regles.pause.debut, finMin: regles.pause.fin, finMax: regles.finPrimaire };
+    }
+    if (periode === 'matin2') {
+      return { debutMin: regles.pause.fin, debutMax: regles.finPrimaire, finMin: regles.pause.fin, finMax: regles.finPrimaire };
+    }
+    return { debutMin: regles.debutApresMidi, debutMax: regles.finApresMidi, finMin: regles.debutApresMidi, finMax: regles.finApresMidi };
+  };
+  const heureFinDefaut = (periode) => (
+    periode === 'matin1' ? regles.pause.debut : (periode === 'matin2' ? regles.finPrimaire : regles.finApresMidi)
+  );
 
   // Référentiels + horaires
   useEffect(() => {
@@ -142,6 +163,7 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
       jour_semaine: 2,
       heure_debut: estPrimaire ? regles.debutJournee : (debutsPossibles(regles)[0] || regles.debutJournee),
       heure_fin: estPrimaire ? regles.pause.debut : '',
+      periode: 'matin1',
       nb_heures: 1,
       salle: '',
     });
@@ -157,6 +179,7 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
       jour_semaine: c.jour_semaine,
       heure_debut: String(c.heure_debut).slice(0, 5),
       heure_fin: String(c.heure_fin).slice(0, 5),
+      periode: periodeDepuisHeure(String(c.heure_debut).slice(0, 5)),
       nb_heures: c.duree_libre ? 1 : (c.nb_heures || 1),
       salle: c.salle || '',
     });
@@ -260,7 +283,7 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
       <p className="text-doux mb-2">
         Début {regles.debutJournee} · 1 h = {duree} min · pause {regles.pause.debut}–{regles.pause.fin} ·
         {' '}matinée jusqu’à {regles.finMatin} · retour à {regles.debutApresMidi}–{regles.finApresMidi}.
-        {' '}Primaire : fin à {regles.finPrimaire}, durée libre.
+        {' '}Primaire : matin jusqu’à {regles.finPrimaire}, retour à {regles.debutApresMidi}, durée libre.
       </p>
       <p className="text-doux mb-4">Déplacez les créneaux par glisser-déposer (collège / lycée), cliquez pour modifier. Les chevauchements et les créneaux hors horaires sont refusés.</p>
 
@@ -337,6 +360,17 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
               <option value="">— Choisir —</option>
               {affectations.map((a) => <option key={a.teacher_assignment_id} value={a.teacher_assignment_id}>{a.matiere_nom} — {a.prof_prenom} {a.prof_nom}</option>)}
             </Select>
+            {estPrimaire && (
+              <Select label="Moment" name="periode" value={form.periode} className="mt-4" onChange={(e) => {
+                const periode = e.target.value;
+                const b = bornesPeriode(periode);
+                setForm((f) => ({ ...f, periode, heure_debut: b.debutMin, heure_fin: heureFinDefaut(periode) }));
+              }}>
+                <option value="matin1">Matin — avant la pause ({regles.debutJournee}–{regles.pause.debut})</option>
+                <option value="matin2">Matin — après la pause ({regles.pause.fin}–{regles.finPrimaire})</option>
+                <option value="apresmidi">Après-midi ({regles.debutApresMidi}–{regles.finApresMidi})</option>
+              </Select>
+            )}
             <div className="grid-2 mt-4">
               <Select label="Jour" name="jour" value={form.jour_semaine} onChange={(e) => setForm({ ...form, jour_semaine: e.target.value })}>
                 {JOURS_LABEL.map((j, i) => <option key={j} value={i + 1}>{j.charAt(0).toUpperCase() + j.slice(1)}</option>)}
@@ -344,8 +378,8 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
               {estPrimaire ? (
                 <Input label="Début (libre)" name="heure_debut" type="time" value={form.heure_debut}
                   onChange={(e) => setForm({ ...form, heure_debut: e.target.value })}
-                  min={regles.debutJournee} max={regles.pause.debut} required
-                  aide={`Avant la pause (${regles.pause.debut})`} />
+                  min={bornesPeriode(form.periode).debutMin} max={bornesPeriode(form.periode).debutMax} required
+                  aide={`${bornesPeriode(form.periode).debutMin} – ${bornesPeriode(form.periode).debutMax}`} />
               ) : (
                 <Select label="Heure de début" name="heure_debut" value={form.heure_debut} onChange={(e) => setForm({ ...form, heure_debut: e.target.value })}>
                   {debuts.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -357,12 +391,12 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
                 <div className="grid-2 mt-4">
                   <Input label="Fin (libre)" name="heure_fin" type="time" value={form.heure_fin}
                     onChange={(e) => setForm({ ...form, heure_fin: e.target.value })}
-                    min={regles.pause.fin} max={regles.finPrimaire} required
-                    aide={`Après la pause, au plus tard ${regles.finPrimaire}`} />
+                    min={bornesPeriode(form.periode).finMin} max={bornesPeriode(form.periode).finMax} required
+                    aide={`Au plus tard ${bornesPeriode(form.periode).finMax}`} />
                   <Input label="Heure de fin" value={form.heure_fin} disabled />
                 </div>
                 <p className="text-doux" style={{ fontSize: 12 }}>
-                  Au primaire, la durée n’est pas fixée : saisissez directement l’heure de fin (avant {regles.finPrimaire}).
+                  Au primaire, la durée n’est pas fixée : saisissez directement l’heure de fin. Cours le matin (fin {regles.finPrimaire}) et l’après-midi dès {regles.debutApresMidi}.
                 </p>
               </>
             ) : (

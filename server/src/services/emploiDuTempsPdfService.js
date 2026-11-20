@@ -22,17 +22,40 @@ function nettoyerNom(texte) {
     .replace(/[^a-zA-Z0-9-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
 }
 
-/** Lignes de la grille : créneaux + bandes de pause. */
-function construireLignes(regles, primaire) {
+/** Lignes de la grille : créneaux + bandes de pause.
+ *  Primaire : durées libres → une ligne par cours réellement saisi. */
+function construireLignes(regles, primaire, creneaux = []) {
   const plages = horaires.plages(regles, primaire);
   const lignes = [];
   for (let index = 0; index < plages.length; index += 1) {
     const plage = plages[index];
     const debut = horaires.enMinutes(plage.debut);
     const fin = horaires.enMinutes(plage.fin);
-    if (primaire && index === 1) {
-      // Durée libre au primaire : une seule ligne pour la reprise.
-      lignes.push({ debut, fin, libelle: `${plage.debut} – ${plage.fin}`, pause: false });
+    if (primaire) {
+      const duMoment = creneaux
+        .filter((c) => {
+          const d = horaires.enMinutes(String(c.heure_debut).slice(0, 5));
+          return d >= debut && d < fin;
+        })
+        .sort((a, b) => horaires.enMinutes(String(a.heure_debut).slice(0, 5)) - horaires.enMinutes(String(b.heure_debut).slice(0, 5)));
+      if (duMoment.length > 0) {
+        const vus = new Set();
+        for (const c of duMoment) {
+          const debutCreneau = String(c.heure_debut).slice(0, 5);
+          const finCreneau = String(c.heure_fin).slice(0, 5);
+          const cle = `${debutCreneau}-${finCreneau}`;
+          if (vus.has(cle)) continue;
+          vus.add(cle);
+          lignes.push({
+            debut: horaires.enMinutes(debutCreneau),
+            fin: horaires.enMinutes(finCreneau),
+            libelle: `${debutCreneau} – ${finCreneau}`,
+            pause: false,
+          });
+        }
+      } else {
+        lignes.push({ debut, fin, libelle: `${plage.debut} – ${plage.fin}`, pause: false });
+      }
     } else {
       for (let t = debut; t + regles.dureeHeureMinutes <= fin; t += regles.dureeHeureMinutes) {
         const f = t + regles.dureeHeureMinutes;
@@ -46,7 +69,7 @@ function construireLignes(regles, primaire) {
     if (index === 0) {
       lignes.push({ pause: true, libelle: `Pause ${regles.pause.debut} – ${regles.pause.fin}` });
     }
-    if (index === 1 && !primaire) {
+    if (index === 1) {
       lignes.push({ pause: true, libelle: `Retour à ${regles.debutApresMidi}` });
     }
   }
@@ -67,7 +90,7 @@ function placerCreneau(lignes, creneau) {
 }
 
 function dessinerGrille(doc, { creneaux, regles, primaire }) {
-  const lignes = construireLignes(regles, primaire);
+  const lignes = construireLignes(regles, primaire, creneaux);
   const x0 = 40;
   const largeur = doc.page.width - 80;
   const largeurJour = (largeur - LARGEUR_HEURE) / 5;
@@ -145,7 +168,7 @@ async function dessinerPage(doc, { alias, creneaux, regles, primaire, annee, ave
   dessinerGrille(doc, { creneaux, regles, primaire });
   doc.fillColor('#64748b').font('Helvetica').fontSize(7.5).text(
     primaire
-      ? `Primaire — cours de ${regles.debutJournee} à ${regles.finPrimaire}, durée libre, pause ${regles.pause.debut}–${regles.pause.fin}.`
+      ? `Primaire — cours le matin jusqu’à ${regles.finPrimaire} et l’après-midi de ${regles.debutApresMidi} à ${regles.finApresMidi}, durée libre, pause ${regles.pause.debut}–${regles.pause.fin}.`
       : `1 h = ${regles.dureeHeureMinutes} min · pause ${regles.pause.debut}–${regles.pause.fin} · matinée jusqu’à ${regles.finMatin} · retour ${regles.debutApresMidi}–${regles.finApresMidi}.`,
     40, doc.y + 2, { width: doc.page.width - 80 }
   );

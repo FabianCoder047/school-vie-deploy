@@ -40,12 +40,14 @@ test('le début doit respecter la grille de 55 min (collège/lycée)', () => {
   assert.equal(resultat.code, 'DEBUT_NON_ALIGNE');
 });
 
-test('le primaire a une durée libre mais s’arrête à 11:30', () => {
+test('le primaire a une durée libre, le matin jusqu’à 11:30 et l’après-midi dès 14:30', () => {
   assert.equal(horaires.verifierCreneau({ debut: '10:10', fin: '11:30', primaire: true, r: REGLES }).valide, true);
   const tropLong = horaires.verifierCreneau({ debut: '10:10', fin: '11:35', primaire: true, r: REGLES });
   assert.equal(tropLong.valide, false);
   assert.equal(tropLong.code, 'APRES_FIN_PRIMAIRE');
-  assert.equal(horaires.verifierCreneau({ debut: '14:30', fin: '15:25', primaire: true, r: REGLES }).code, 'APRES_FIN_PRIMAIRE');
+  assert.equal(horaires.verifierCreneau({ debut: '11:30', fin: '14:30', primaire: true, r: REGLES }).code, 'PAUSE_REPAS');
+  assert.equal(horaires.verifierCreneau({ debut: '14:30', fin: '16:10', primaire: true, r: REGLES }).valide, true);
+  assert.equal(horaires.verifierCreneau({ debut: '14:30', fin: '18:00', primaire: true, r: REGLES }).code, 'APRES_FIN_JOURNEE');
 });
 
 test('détection du cycle primaire', () => {

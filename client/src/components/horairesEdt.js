@@ -35,11 +35,9 @@ export function segmentsDepuisRegles(regles = REGLES_DEFAUT, estPrimaire = false
       fin: estPrimaire ? regles.finPrimaire : regles.finMatin,
       libelle: estPrimaire ? 'Reprise (primaire)' : 'Reprise',
     },
+    { type: 'pause', debut: estPrimaire ? regles.finPrimaire : regles.finMatin, fin: regles.debutApresMidi, libelle: 'Retour à 14h30' },
+    { type: 'cours', debut: regles.debutApresMidi, fin: regles.finApresMidi, libelle: estPrimaire ? 'Après-midi (primaire)' : 'Après-midi' },
   ];
-  if (!estPrimaire) {
-    segments.push({ type: 'pause', debut: regles.finMatin, fin: regles.debutApresMidi, libelle: 'Retour à 14h30' });
-    segments.push({ type: 'cours', debut: regles.debutApresMidi, fin: regles.finApresMidi, libelle: 'Après-midi' });
-  }
   return segments;
 }
 

@@ -273,6 +273,17 @@ test('EDT : deux créneaux chevauchants pour le même alias → 409', async () =
   assert.equal(weekEnd.status, 400);
 });
 
+test('EDT primaire : créneau l’après-midi avec durée libre', async () => {
+  const assignments = await query('SELECT id FROM teacher_assignments WHERE class_alias_id = ?', [state.aliasId]);
+  const assignmentId = assignments[0][0].id;
+  const res = await agent.post('/api/directeur/edt')
+    .set('Authorization', `Bearer ${state.directeurToken}`)
+    .send({ class_alias_id: state.aliasId, teacher_assignment_id: assignmentId, jour_semaine: 3, heure_debut: '14:30', heure_fin: '16:10' });
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  assert.equal(String(res.body.heure_fin).slice(0, 5), '16:10');
+  assert.equal(res.body.duree_libre, 1);
+});
+
 test('EDT : génération du PDF (directeur)', async () => {
   const res = await agent.get(`/api/directeur/edt/pdf?class_alias_id=${state.aliasId}`)
     .set('Authorization', `Bearer ${state.directeurToken}`)

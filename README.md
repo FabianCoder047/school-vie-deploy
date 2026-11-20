@@ -380,8 +380,9 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
   1 heure de cours = **55 min** ; les créneaux collège/lycée commencent sur la
   grille (07:00, 07:55, 08:50, 10:10, 11:05, 14:30, …) et ne peuvent traverser
   ni la pause ni le retour à la maison. Au **primaire**, la durée est libre
-  (heure de fin saisie) mais les cours s'arrêtent à **11:30**, sans créneau
-  l'après-midi. Toutes ces heures sont modifiables dans Paramètres → Horaires.
+  (heure de fin saisie) : cours le matin jusqu'à **11:30** et l'après-midi dès
+  **14:30** (même fin configurable que le collège/lycée). Toutes ces heures sont
+  modifiables dans Paramètres → Horaires.
   Conflits (alias / professeur / salle) → 409 avec message précis.
   Déplacement par glisser-déposer (snap sur les heures autorisées) ou via l'édition.
   **Impression** : PDF A4 paysage par alias, classe ou cycle (une page par alias),
