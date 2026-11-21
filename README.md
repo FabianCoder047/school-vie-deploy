@@ -259,7 +259,7 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
 | 3 | Espace Professeur + périodes de saisie : périodes d'évaluation + fenêtre de saisie stricte (API+UI), emploi du temps 55 min avec détection des chevauchements (alias/prof/salle) et glisser-déposer, saisie Excel des notes (clavier, moyenne instantanée, verrouillage), appel présents/absents/retard (notification parents) | ✅ Livré |
 | 4 | Documents PDF (cartes 8/page avec QR, bulletins modèle togolais — une page A4 par élève, rangs 1er/2ème par matière et général, résultats de tous les trimestres, jamais stockés), communiqués ciblés (tous/rôle/cycle/classe/alias), notifications réelles (badge/cloche), espace Parent (notes, EDT, situation financière — consultation lecture seule) | ✅ Livré |
 | 5 | Sauvegardes par année académique sous l'Administrateur + KPI sur tous les dashboards + revue sécurité + 28 tests automatisés + déploiement + gestion du profil (`/profil`) | ✅ Livré |
-| 6 | Liste de renvoi (Comptable, classe entière, PDF signatures Comptable/Directeur) ; Emploi du temps / Cartes / Bulletins / Communiqués accessibles à la Secrétaire (bulletins & cartes protégés par le **feu vert** du Directeur) ; onglet Journal d'activités (Admin — toutes les activités de tout le monde) ; onglet Communiqués dans tous les espaces | ✅ Livré |
+| 6 | Liste de renvoi (Comptable, classe entière, PDF signatures Comptable/Directeur) ; Emploi du temps / Cartes / Bulletins / Fiches de proclamation / Communiqués accessibles à la Secrétaire (bulletins & cartes protégés par le **feu vert** du Directeur) ; gestion des alias de classe déléguée à la Secrétaire ; onglet Journal d'activités (Admin — toutes les activités de tout le monde) ; onglet Communiqués dans tous les espaces | ✅ Livré |
 
 ## Décisions & limites documentées
 
@@ -440,6 +440,14 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
   bulletins, fiches de proclamation et communiqués sont montés sous
   `/api/secretaire` (mêmes services, le feu vert appliqué uniquement côté
   secrétaire). Le Directeur conserve tous ses écrans.
+- **Alias de classe — gestion déléguée** : la Secrétaire peut créer, modifier et
+  supprimer des alias (`POST/PUT/DELETE /api/secretaire/alias`, mêmes contrôleurs,
+  validateur, journalisation et contrôles d'usage que le Directeur). L'écran
+  `/secretaire/alias` est le même que celui du Directeur
+  (`pages/_shared/AliasEspace.jsx`, prop `espace`) ; la lecture `/api/alias` reste
+  ouverte à tout utilisateur authentifié. Aucun feu vert requis : la délégation
+  est permanente. Un alias utilisé (inscription, affectation, EDT) ne peut pas
+  être supprimé (`409 ENTITY_IN_USE`).
 - **Paramètres de l'école** : maintenus dans l'espace **Directeur** (choix
   confirmé). Incohérence documentée : les tests Sprint 1 le plaçaient côté Admin ;
   il a été déplacé au Sprint Documents, puis confirmé côté Directeur.

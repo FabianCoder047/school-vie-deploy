@@ -43,6 +43,7 @@ import CommuniquesLecture from './pages/_shared/CommuniquesLecture';
 import EmploiDuTempsEspace from './pages/_shared/EmploiDuTempsEspace';
 import CartesEspace from './pages/_shared/CartesEspace';
 import BulletinsEspace from './pages/_shared/BulletinsEspace';
+import AliasEspace from './pages/_shared/AliasEspace';
 import ProclamationsEspace from './pages/_shared/ProclamationsEspace';
 import CommuniquesEspace from './pages/_shared/CommuniquesEspace';
 import ProfilPage from './pages/ProfilPage';
@@ -134,6 +135,7 @@ export default function App() {
         <Route path="secretaire" element={<ProtectedRoute roles={['SECRETAIRE']}><DashboardSecretaire /></ProtectedRoute>} />
         <Route path="secretaire/nouvel-eleve" element={<ProtectedRoute roles={['SECRETAIRE']}><NouvelEleve /></ProtectedRoute>} />
         <Route path="secretaire/eleves" element={<ProtectedRoute roles={['SECRETAIRE']}><Eleves /></ProtectedRoute>} />
+        <Route path="secretaire/alias" element={<ProtectedRoute roles={['SECRETAIRE']}><AliasEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/statistiques-presences" element={<ProtectedRoute roles={['SECRETAIRE']}><StatistiquesPresences base="/secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/edt" element={<ProtectedRoute roles={['SECRETAIRE']}><EmploiDuTempsEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/cartes" element={<ProtectedRoute roles={['SECRETAIRE']}><CartesEspace espace="secretaire" /></ProtectedRoute>} />

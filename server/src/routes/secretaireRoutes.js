@@ -4,6 +4,8 @@ const controleur = require('../controllers/secretaireController');
 const { validate } = require('../middlewares/validate');
 const { uploadPhoto, uploadJustificatif, multerErrorHandler } = require('../middlewares/upload');
 const { inscriptionSchema, paiementInscriptionSchema, modifierEleveSchema } = require('../validators/inscriptionValidators');
+const { aliasSchema } = require('../validators/configurationValidators');
+const alias = require('../controllers/affectationController');
 
 const router = express.Router();
 
@@ -11,6 +13,12 @@ const router = express.Router();
 router.post('/eleves', validate(inscriptionSchema), controleur.inscrire);
 router.get('/classes-pour-inscription', controleur.classesPourInscription);
 router.get('/frais-classe/:classId', controleur.fraisClasse);
+
+/* Alias de classe — gestion déléguée par le directeur à la secrétaire */
+/* (la lecture /api/alias est déjà ouverte à tout utilisateur authentifié) */
+router.post('/alias', validate(aliasSchema), alias.creerAlias);
+router.put('/alias/:id', validate(aliasSchema), alias.modifierAlias);
+router.delete('/alias/:id', alias.supprimerAlias);
 
 /* Liste et fiches élèves */
 router.get('/eleves', controleur.listerEleves);

@@ -307,3 +307,41 @@ test('une route inconnue renvoie 404', async () => {
   const res = await agent.get('/api/nope-jamais-existe').set('Authorization', `Bearer ${state.adminToken}`);
   assert.equal(res.status, 404);
 });
+
+/* ===== ALIAS DE CLASSE — GESTION DÉLÉGUÉE À LA SECRÉTAIRE ===== */
+
+test('Secrétaire : créer, modifier et supprimer un alias de classe', async () => {
+  const creation = await agent.post('/api/secretaire/alias')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ class_id: 1, nom: 'CP1 B', capacite: 30 });
+  assert.equal(creation.status, 201, JSON.stringify(creation.body));
+  const id = creation.body.id;
+  assert.ok(id);
+
+  const modification = await agent.put(`/api/secretaire/alias/${id}`)
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ class_id: 1, nom: 'CP1 B bis', capacite: 32 });
+  assert.equal(modification.status, 200, JSON.stringify(modification.body));
+
+  const liste = await agent.get('/api/alias?parPage=100')
+    .set('Authorization', `Bearer ${state.secretaireToken}`);
+  assert.equal(liste.status, 200);
+  assert.ok((liste.body.rows || []).some((a) => a.id === id && a.nom === 'CP1 B bis'));
+
+  const suppression = await agent.delete(`/api/secretaire/alias/${id}`)
+    .set('Authorization', `Bearer ${state.secretaireToken}`);
+  assert.equal(suppression.status, 200);
+});
+
+test('Secrétaire : validation du nom et refus du doublon', async () => {
+  const invalide = await agent.post('/api/secretaire/alias')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ class_id: 1, nom: '' });
+  assert.equal(invalide.status, 400);
+
+  const doublon = await agent.post('/api/secretaire/alias')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ class_id: 1, nom: 'CP1 A' }); // alias créé par le directeur plus haut
+  assert.equal(doublon.status, 409);
+  assert.equal(doublon.body.code, 'ALIAS_DOUBLON');
+});

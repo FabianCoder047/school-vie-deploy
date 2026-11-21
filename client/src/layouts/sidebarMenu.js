@@ -49,6 +49,7 @@ export const SIDEBAR_MENUS = {
     { section: 'Inscriptions' },
     { label: 'Nouvel élève', to: '/secretaire/nouvel-eleve', icone: IconStudent },
     { label: 'Élèves & fiches', to: '/secretaire/eleves', icone: IconUsers },
+    { label: 'Alias de classe', to: '/secretaire/alias', icone: IconGrid },
     { label: 'Statistiques présences', to: '/secretaire/statistiques-presences', icone: IconChart },
     { section: 'Documents' },
     { label: 'Emploi du temps', to: '/secretaire/edt', icone: IconCalendar },
