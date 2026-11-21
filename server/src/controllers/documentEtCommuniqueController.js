@@ -1,7 +1,9 @@
-// Contrôleur HTTP — communiqués (création ciblée, liste, génération PDF cartes/bulletins).
+// Contrôleur HTTP — communiqués (création ciblée, liste, génération PDF cartes,
+// bulletins et fiches de proclamation).
 const announcementService = require('../services/announcementService');
 const carteService = require('../services/carteService');
 const bulletinService = require('../services/bulletinService');
+const proclamationService = require('../services/proclamationService');
 const yearRepo = require('../repositories/academicYearRepository');
 const { ApiError } = require('../utils/ApiError');
 const { log: audit } = require('../repositories/auditRepository');
@@ -73,6 +75,21 @@ async function bulletinsCycle(req, res, next) {
   } catch (err) { next(err); }
 }
 
+/* ===== FICHES DE PROCLAMATION (PDF à la volée, une fiche par alias) ===== */
+async function proclamationsAlias(req, res, next) {
+  try {
+    const courante = await yearRepo.findCurrent();
+    if (!courante) throw ApiError.badRequest('Aucune année académique courante n’est définie.', 'NO_CURRENT_YEAR');
+    if (!req.query.evaluation_period_id) throw ApiError.badRequest('La période (evaluation_period_id) est requise.', 'PARAMS_REQUIS');
+    await audit({ userId: req.user.id, action: 'GENERATE_PROCLAMATIONS', entity: 'proclamations', entityId: Number(req.params.classAliasId), newValues: { scope: 'ALIAS', class_alias_id: Number(req.params.classAliasId), evaluation_period_id: Number(req.query.evaluation_period_id), role: req.user.role }, ipAddress: req.ip });
+    await proclamationService.genererFicheProclamation(res, {
+      academicYearId: courante.id,
+      classAliasId: Number(req.params.classAliasId),
+      periodeId: Number(req.query.evaluation_period_id),
+    });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   publierCommunique,
   listerCommuniques,
@@ -81,4 +98,5 @@ module.exports = {
   cartesCycle,
   bulletinsAlias,
   bulletinsCycle,
+  proclamationsAlias,
 };

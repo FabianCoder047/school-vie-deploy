@@ -16,6 +16,7 @@ directeurDocumentsRouter.get('/cartes/alias/:classAliasId', documentEtCommunique
 directeurDocumentsRouter.get('/cartes/cycle/:cycleId', documentEtCommunique.cartesCycle);
 directeurDocumentsRouter.get('/bulletins/alias/:classAliasId', documentEtCommunique.bulletinsAlias);
 directeurDocumentsRouter.get('/bulletins/cycle/:cycleId', documentEtCommunique.bulletinsCycle);
+directeurDocumentsRouter.get('/proclamations/alias/:classAliasId', documentEtCommunique.proclamationsAlias);
 directeurDocumentsRouter.get('/communiques', documentEtCommunique.listerCommuniques);
 directeurDocumentsRouter.post('/communiques', validate(communiqueSchema), documentEtCommunique.publierCommunique);
 

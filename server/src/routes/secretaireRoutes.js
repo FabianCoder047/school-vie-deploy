@@ -47,6 +47,7 @@ router.get('/cartes/alias/:classAliasId', verifierFeuVert('cartes'), documents.c
 router.get('/cartes/cycle/:cycleId', verifierFeuVert('cartes'), documents.cartesCycle);
 router.get('/bulletins/alias/:classAliasId', verifierFeuVert('bulletins'), documents.bulletinsAlias);
 router.get('/bulletins/cycle/:cycleId', verifierFeuVert('bulletins'), documents.bulletinsCycle);
+router.get('/proclamations/alias/:classAliasId', verifierFeuVert('proclamations'), documents.proclamationsAlias);
 router.get('/communiques', documents.listerCommuniques);
 router.post('/communiques', validate(communiqueSchema), documents.publierCommunique);
 

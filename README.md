@@ -103,18 +103,21 @@ Le front n'a qu'une variable : `VITE_API_URL` (défaut `http://localhost:5000/ap
 #    (entête école, LISTE DE RENVOI, signatures LE COMPTABLE / LE DIRECTEUR ;
 #    ligne rouge = élèves à renvoyer ; note « prévisionnelle » si la date
 #    d'arrêt est dans le futur). Arrêt au 18/11/2026 → À jour : 3, À renvoyer : 5.
-# 2. Secrétaire → Emploi du temps / Cartes scolaires / Bulletins / Communiqués :
+# 2. Secrétaire → Emploi du temps / Cartes scolaires / Bulletins /
+#    Fiches de proclamation / Communiqués :
 #    les écrans sont les mêmes que ceux du Directeur (mêmes règles API).
-#    - Cartes & bulletins : Tant que le feu vert n'est pas donné → bandeau
-#      « Le directeur n'a pas encore donné le feu vert … » + boutons désactivés
-#      (API : 403 IMPRESSION_NON_AUTORISEE).
-#    - Directeur → Cartes/Bulletins : carte « Feu vert secrétaire » → donner /
-#      révoquer. La secrétaire reçoit une notification (cloche) à chaque bascule.
+#    - Cartes, bulletins & fiches de proclamation : Tant que le feu vert n'est
+#      pas donné → bandeau « Le directeur n'a pas encore donné le feu vert … »
+#      + boutons désactivés (API : 403 IMPRESSION_NON_AUTORISEE).
+#    - Directeur → Cartes/Bulletins/Fiches de proclamation : carte « Feu vert
+#      secrétaire » → donner / révoquer. La secrétaire reçoit une notification
+#      (cloche) à chaque bascule.
 #    - Directeur continue d'imprimer librement.
 # 3. Admin → Journal d'activités : toutes les activités (connexion incluse) sont
 #    consultables — recherche par auteur, filtres action / entité / période,
 #    pagination, détail (avant/après JSON). Générer un PDF (liste de renvoi,
-#    bulletins…) y crée une ligne (LISTE_RENVOI, GENERATE_BULLETINS…).
+#    bulletins, fiches de proclamation…) y crée une ligne
+#    (LISTE_RENVOI, GENERATE_BULLETINS, GENERATE_PROCLAMATIONS…).
 # 4. Communiqués : chaque espace (Admin, Directeur, Secrétaire, Comptable,
 #    Professeur, Parent) a l'onglet Communiqués. Le Directeur/Secrétaire/Admin
 #    voient tout ; les autres voient les communiqués qui les concernent
@@ -411,21 +414,32 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
     explicative, lignes de signatures LE COMPTABLE / LE DIRECTEUR, aucune
     mention « tranche »). Généré en mémoire, jamais écrit sur disque.
   - Journalisé (`LISTE_RENVOI`) — visible dans l'onglet Journal.
-- **Feu vert (bulletins & cartes)** : deux autorisations permanentes,
-  activables/désactivables, réservées au DIRECTEUR
-  (`school_settings.cartes_impression_autorisee` / `bulletins_impression_autorisee`,
-  migration `006`). La SECRÉTAIRE obtient 403 `IMPRESSION_NON_AUTORISEE` à la
-  génération du PDF tant que le feu vert est coupé ; son écran affiche un bandeau
-  et désactive les boutons (ré-activés automatiquement à la levée, sans recharger).
-  Le DIRECTEUR n'est jamais contraint. Chaque bascule → notification à tous les
-  secrétaires actifs + audit (`UPDATE_FEUVERT`). Les drapeaux sont lisibles par
-  tout compte connecté via `/parametres` (information non sensible).
-- **Emploi du temps / cartes / bulletins / communiqués** : écrans **partagés**
-  Directeur ↔ Secrétaire (`pages/_shared/*Espace.jsx`, prop `espace`). Les
-  routes API de l'emploi du temps sont montées sous les deux espaces avec les
-  mêmes contrôleurs/règles (`routes/edtRoutes.js`) ; cartes, bulletins et
-  communiqués sont montés sous `/api/secretaire` (mêmes services, le feu vert
-  appliqué uniquement côté secrétaire). Le Directeur conserve tous ses écrans.
+- **Feu vert (cartes, bulletins, fiches de proclamation, EDT)** : une
+  autorisation permanente par type de document, activable/désactivable,
+  réservée au DIRECTEUR (`school_settings.cartes_impression_autorisee`,
+  `bulletins_impression_autorisee` (migration `006`),
+  `proclamations_impression_autorisee` (migration `011`),
+  `edts_impression_autorisee` (migration `010`)). La SECRÉTAIRE obtient 403
+  `IMPRESSION_NON_AUTORISEE` à la génération du PDF tant que le feu vert est
+  coupé ; son écran affiche un bandeau et désactive les boutons (ré-activés
+  automatiquement à la levée, sans recharger). Le DIRECTEUR n'est jamais
+  contraint. Chaque bascule → notification à tous les secrétaires actifs + audit
+  (`UPDATE_FEUVERT`). Les drapeaux sont lisibles par tout compte connecté via
+  `/parametres` (information non sensible).
+- **Fiches de proclamation** : PDF A4 (une fiche par alias) généré à la volée à
+  partir de la période d'évaluation choisie — en-tête officiel, statistiques de
+  l'alias, élèves classés par **rang** avec **moyenne générale** et **décision**
+  indicatives (ADMIS si moyenne ≥ 10/20, sinon REDOUBLE), visa du Chef
+  d'établissement. Le conseil de classe reste souverain (mention imprimée).
+  Données partagées avec les bulletins (`classesDataService.js`), aucun PDF
+  stocké sur le serveur.
+- **Emploi du temps / cartes / bulletins / fiches de proclamation / communiqués**
+  : écrans **partagés** Directeur ↔ Secrétaire (`pages/_shared/*Espace.jsx`,
+  prop `espace`). Les routes API de l'emploi du temps sont montées sous les deux
+  espaces avec les mêmes contrôleurs/règles (`routes/edtRoutes.js`) ; cartes,
+  bulletins, fiches de proclamation et communiqués sont montés sous
+  `/api/secretaire` (mêmes services, le feu vert appliqué uniquement côté
+  secrétaire). Le Directeur conserve tous ses écrans.
 - **Paramètres de l'école** : maintenus dans l'espace **Directeur** (choix
   confirmé). Incohérence documentée : les tests Sprint 1 le plaçaient côté Admin ;
   il a été déplacé au Sprint Documents, puis confirmé côté Directeur.

@@ -43,10 +43,12 @@ import CommuniquesLecture from './pages/_shared/CommuniquesLecture';
 import EmploiDuTempsEspace from './pages/_shared/EmploiDuTempsEspace';
 import CartesEspace from './pages/_shared/CartesEspace';
 import BulletinsEspace from './pages/_shared/BulletinsEspace';
+import ProclamationsEspace from './pages/_shared/ProclamationsEspace';
 import CommuniquesEspace from './pages/_shared/CommuniquesEspace';
 import ProfilPage from './pages/ProfilPage';
 import CartesScolaires from './pages/directeur/CartesScolaires';
 import Bulletins from './pages/directeur/Bulletins';
+import Proclamations from './pages/directeur/Proclamations';
 import StatistiquesPresences from './pages/directeur/StatistiquesPresences';
 import Communiques from './pages/directeur/Communiques';
 import Notes from './pages/parent/Notes';
@@ -121,6 +123,7 @@ export default function App() {
         <Route path="profil" element={<ProtectedRoute><ProfilPage /></ProtectedRoute>} />
         <Route path="directeur/cartes" element={<ProtectedRoute roles={['DIRECTEUR']}><CartesScolaires /></ProtectedRoute>} />
         <Route path="directeur/bulletins" element={<ProtectedRoute roles={['DIRECTEUR']}><Bulletins /></ProtectedRoute>} />
+        <Route path="directeur/proclamations" element={<ProtectedRoute roles={['DIRECTEUR']}><Proclamations /></ProtectedRoute>} />
         <Route path="directeur/statistiques-presences" element={<ProtectedRoute roles={['DIRECTEUR']}><StatistiquesPresences base="/directeur" peutVoirDetail /></ProtectedRoute>} />
         <Route path="directeur/communiques" element={<ProtectedRoute roles={['DIRECTEUR']}><Communiques /></ProtectedRoute>} />
         <Route path="professeur" element={<ProtectedRoute roles={['PROFESSEUR']}><DashboardProfesseur /></ProtectedRoute>} />
@@ -135,6 +138,7 @@ export default function App() {
         <Route path="secretaire/edt" element={<ProtectedRoute roles={['SECRETAIRE']}><EmploiDuTempsEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/cartes" element={<ProtectedRoute roles={['SECRETAIRE']}><CartesEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/bulletins" element={<ProtectedRoute roles={['SECRETAIRE']}><BulletinsEspace espace="secretaire" /></ProtectedRoute>} />
+        <Route path="secretaire/proclamations" element={<ProtectedRoute roles={['SECRETAIRE']}><ProclamationsEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/communiques" element={<ProtectedRoute roles={['SECRETAIRE']}><CommuniquesEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="comptable" element={<ProtectedRoute roles={['COMPTABLE']}><DashboardComptable /></ProtectedRoute>} />
         <Route path="comptable/paiements" element={<ProtectedRoute roles={['COMPTABLE']}><Paiements /></ProtectedRoute>} />

@@ -1,7 +1,7 @@
 // Paramètres de l'école (ligne unique id = 1) + uploads (logo, signature, cachet).
 const pool = require('../config/db');
 
-const PUBLIC = 'id, nom, logo_path, adresse, bp, ville, pays, telephone, email, directeur_nom, signature_path, cachet_path, devise, note_max, duree_heure_minutes, debut_journee, pause_matin_debut, pause_matin_fin, fin_matin, debut_apres_midi, fin_apres_midi, fin_primaire, cartes_impression_autorisee, bulletins_impression_autorisee, edts_impression_autorisee';
+const PUBLIC = 'id, nom, logo_path, adresse, bp, ville, pays, telephone, email, directeur_nom, signature_path, cachet_path, devise, note_max, duree_heure_minutes, debut_journee, pause_matin_debut, pause_matin_fin, fin_matin, debut_apres_midi, fin_apres_midi, fin_primaire, cartes_impression_autorisee, bulletins_impression_autorisee, proclamations_impression_autorisee, edts_impression_autorisee';
 
 async function get() {
   const [[row]] = await pool.query(`SELECT ${PUBLIC} FROM school_settings WHERE id = 1`);
@@ -36,11 +36,12 @@ async function updateSignature(signaturePath) {
 }
 
 /** Feu vert du directeur : autorisation (permanente, activable/désactivable)
- *  d'impression des cartes ou des bulletins par la secrétaire. */
+ *  d'impression des cartes, bulletins, fiches de proclamation ou EDT par la secrétaire. */
 async function setAutorisationImpression(type, autorisee) {
   const colonnes = {
     cartes: 'cartes_impression_autorisee',
     bulletins: 'bulletins_impression_autorisee',
+    proclamations: 'proclamations_impression_autorisee',
     edts: 'edts_impression_autorisee',
   };
   const colonne = colonnes[type];

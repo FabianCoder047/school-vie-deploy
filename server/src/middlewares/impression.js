@@ -7,11 +7,13 @@ const { ApiError } = require('../utils/ApiError');
 const COLONNES = {
   cartes: 'cartes_impression_autorisee',
   bulletins: 'bulletins_impression_autorisee',
+  proclamations: 'proclamations_impression_autorisee',
   edts: 'edts_impression_autorisee',
 };
 const LIBELLES = {
   cartes: 'des cartes scolaires',
   bulletins: 'des bulletins',
+  proclamations: 'des fiches de proclamation',
   edts: 'des emplois du temps',
 };
 

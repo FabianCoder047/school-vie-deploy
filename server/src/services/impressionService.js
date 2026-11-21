@@ -1,6 +1,7 @@
 // =====================================================================
 // Feu vert du directeur — autorisation permanente (activable/désactivable)
-// d'impression des cartes scolaires ou des bulletins par la SECRÉTAIRE.
+// d'impression des cartes scolaires, bulletins, fiches de proclamation ou EDT
+// par la SECRÉTAIRE.
 // Le DIRECTEUR n'y est pas contraint ; la SECRÉTAIRE reçoit 403
 // IMPRESSION_NON_AUTORISEE tant que l'autorisation est coupée.
 // =====================================================================
@@ -14,13 +15,14 @@ const logger = require('../utils/logger');
 const TYPES = {
   cartes: { colonne: 'cartes_impression_autorisee', titre: 'Cartes scolaires', genre: 'des cartes scolaires' },
   bulletins: { colonne: 'bulletins_impression_autorisee', titre: 'Bulletins', genre: 'des bulletins' },
+  proclamations: { colonne: 'proclamations_impression_autorisee', titre: 'Fiches de proclamation', genre: 'des fiches de proclamation' },
   edts: { colonne: 'edts_impression_autorisee', titre: 'Emplois du temps', genre: 'des emplois du temps' },
 };
 
 /** Active ou révoque l'autorisation d'impression ; notifie les secrétaires ; trace l'audit. */
 async function basculer(type, autorisee, actorId, ip) {
   const cfg = TYPES[type];
-  if (!cfg) throw ApiError.badRequest('Type d’autorisation invalide (cartes, bulletins ou edts).', 'TYPE_INVALIDE');
+  if (!cfg) throw ApiError.badRequest('Type d’autorisation invalide (cartes, bulletins, proclamations ou edts).', 'TYPE_INVALIDE');
   const avant = await settingsRepo.get();
   const parametres = await settingsRepo.setAutorisationImpression(type, autorisee);
 

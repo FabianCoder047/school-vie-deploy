@@ -36,11 +36,12 @@ router.get('/affectations-professeur', affectations.listerAffectationsProfesseur
 router.post('/affectations-professeur', validate(affectationProfesseurSchema), affectations.affecterProfesseur);
 router.delete('/affectations-professeur/:id', affectations.retirerAffectationProfesseur);
 
-/* ===== Feu vert du directeur (impression cartes / bulletins par la secrétaire) ===== */
+/* ===== Feu vert du directeur (impression des documents par la secrétaire) ===== */
 const impression = require('../controllers/impressionController');
 const { impressionSchema } = require('../validators/configurationValidators');
 router.put('/impressions/cartes', validate(impressionSchema), impression.basculerCartes);
 router.put('/impressions/bulletins', validate(impressionSchema), impression.basculerBulletins);
+router.put('/impressions/proclamations', validate(impressionSchema), impression.basculerProclamations);
 router.put('/impressions/edts', validate(impressionSchema), impression.basculerEdts);
 
 /* Signature du directeur (dessinée dans l'app, souris ou doigt, ou uploadée si la main n'y arrive pas) */
