@@ -106,8 +106,8 @@ FLUSH PRIVILEGES;
 ## 5. Étape 2 — Déployer avec le Blueprint Render
 
 1. Render Dashboard → **New → Blueprint**.
-2. Sélectionner le dépôt GitHub, branche `main`, et le fichier
-   `school-app/render.yaml` (chemin détecté automatiquement à la racine du dépôt).
+2. Sélectionner le dépôt GitHub, branche `main`, et le fichier `render.yaml`
+   (à la racine du dépôt — la racine Git est le dossier `school-app`).
 3. Renseigner les variables marquées `sync: false` :
    `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `SMTP_*`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
    Les secrets JWT sont générés automatiquement (`generateValue: true`).

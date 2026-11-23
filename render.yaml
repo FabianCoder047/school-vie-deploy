@@ -14,7 +14,7 @@ services:
     runtime: node
     region: frankfurt
     branch: main
-    rootDir: school-app/server
+    rootDir: server
     # Le disque persistant (uploads) exige un plan payant sur Render.
     plan: starter
     buildCommand: npm ci
@@ -102,7 +102,7 @@ services:
     runtime: static
     region: frankfurt
     branch: main
-    rootDir: school-app/client
+    rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     envVars:
