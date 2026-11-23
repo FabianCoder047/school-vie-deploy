@@ -19,13 +19,19 @@ function splitStatements(sql) {
 }
 
 (async () => {
-  // Connexion sans base sélectionnée : 001_init.sql crée et choisit la base.
+  // MySQL managé : la base est créée à l'avance et l'utilisateur n'a pas le
+  // droit CREATE DATABASE. On se connecte DIRECTEMENT à cette base et on ignore
+  // les instructions CREATE DATABASE / USE de 001_init.sql.
+  const baseDejaCreee = String(process.env.DB_SKIP_CREATE_DATABASE || 'false') === 'true';
+  const dbName = process.env.DB_NAME || 'school_vie_db_004774';
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     multipleStatements: false,
+    ...(baseDejaCreee ? { database: dbName } : {}),
+    ...(String(process.env.DB_SSL || 'false') === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
   });
 
   try {
@@ -65,16 +71,16 @@ function splitStatements(sql) {
         continue;
       }
       // Substitue le nom de base codé dans 001_init.sql par DB_NAME si différent
-      const dbName = process.env.DB_NAME || 'school_vie_db_004774';
       let sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
       sql = sql.replace(/school_vie_db_004774/g, dbName);
       const statements = splitStatements(sql);
       console.log(`  → ${file} (${statements.length} instructions)`);
 
       for (const statement of statements) {
+        if (baseDejaCreee && /^(CREATE DATABASE|USE)\s/i.test(statement)) continue;
         await connection.query(statement);
         // Après un CREATE DATABASE + USE, la session pointe sur la base.
-        if (/^USE\s/i.test(statement)) {
+        if (!baseDejaCreee && /^USE\s/i.test(statement)) {
           await connection.query(`
             CREATE TABLE IF NOT EXISTS schema_migrations (
               name VARCHAR(255) PRIMARY KEY,

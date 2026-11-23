@@ -5,8 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
 const { ApiError } = require('../utils/ApiError');
-
-const DOSSIER_UPLOADS = path.join(__dirname, '..', '..', 'uploads');
+const { DOSSIER_UPLOADS } = require('../config/uploads');
 fs.mkdirSync(DOSSIER_UPLOADS, { recursive: true });
 
 const MIME_EXTENSIONS = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' };

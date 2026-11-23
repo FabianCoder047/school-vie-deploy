@@ -17,6 +17,7 @@ const mysql = require('mysql2/promise');
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'school_vie_db_004774',
+    ...(String(process.env.DB_SSL || 'false') === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
   });
 
   try {

@@ -6,9 +6,7 @@ const { ApiError } = require('../utils/ApiError');
 const settingsRepo = require('../repositories/settingsRepository');
 const { log: audit } = require('../repositories/auditRepository');
 const horaires = require('../config/horairesScolaires');
-
-const DOSSIER_UPLOADS = path.join(__dirname, '..', '..', 'uploads');
-const URL_PUBLIQUE = '/uploads';
+const { DOSSIER_UPLOADS, URL_PUBLIQUE } = require('../config/uploads');
 
 async function lireParametres() {
   const settings = await settingsRepo.get();

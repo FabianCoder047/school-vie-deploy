@@ -1,6 +1,5 @@
 // Assemblage de l'application Express : sécurité (helmet, CORS, rate-limit),
 // parsing JSON, routes, gestion d'erreurs centralisée.
-const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const helmet = require('helmet');
@@ -23,6 +22,7 @@ const professeurRoutes = require('./routes/professeurRoutes');
 const parentRoutes = require('./routes/parentRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const { notificationsRouter, directeurDocumentsRouter } = require('./routes/notificationRoutes');
+const { DOSSIER_UPLOADS } = require('./config/uploads');
 
 const app = express();
 
@@ -56,9 +56,8 @@ app.use(maintenanceGuard);
 
 // Fichiers publics autorisés : logo de l'école (les PDF sont générés en
 // mémoire — jamais écrits sur disque).
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir, { maxAge: '7d', index: false }));
+fs.mkdirSync(DOSSIER_UPLOADS, { recursive: true });
+app.use('/uploads', express.static(DOSSIER_UPLOADS, { maxAge: '7d', index: false }));
 
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);

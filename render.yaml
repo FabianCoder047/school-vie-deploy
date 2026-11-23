@@ -1,0 +1,112 @@
+# =====================================================================
+# School Vie — Blueprint Render (backend + frontend statique).
+# La base MySQL est managée à l'extérieur (Aiven / Railway / Clever Cloud) :
+# renseignez DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME dans le dashboard
+# Render au moment de la création (champs `sync: false` ci-dessous).
+#
+# Déploiement : Render Dashboard → New → Blueprint → ce dépôt → school-app/render.yaml
+# Voir school-app/DEPLOY.md pour la procédure complète.
+# =====================================================================
+services:
+  # ---------- Backend Node / Express ----------
+  - type: web
+    name: school-vie-api
+    runtime: node
+    region: frankfurt
+    branch: main
+    rootDir: school-app/server
+    # Le disque persistant (uploads) exige un plan payant sur Render.
+    plan: starter
+    buildCommand: npm ci
+    # Les migrations sont idempotentes et jouées à chaque démarrage.
+    # Le seed (mot de passe admin) se lance UNE SEULE fois depuis le Shell Render
+    # (voir DEPLOY.md) : ne l'ajoutez pas ici, il réinitialiserait l'admin.
+    startCommand: node src/database/migrate.js && node src/server.js
+    healthCheckPath: /api/health
+    disk:
+      name: school-vie-uploads
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT est injecté automatiquement par Render (ne pas le fixer ici).
+      - key: CLIENT_URL
+        value: https://school-vie-app.onrender.com
+      - key: UPLOADS_DIR
+        value: /data/uploads
+      # --- Base MySQL managée externe ---
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: school_vie_db_004774
+      - key: DB_SSL
+        value: "true"
+      # La base est créée à l'avance chez le fournisseur MySQL : on ignore
+      # CREATE DATABASE / USE dans la migration 001.
+      - key: DB_SKIP_CREATE_DATABASE
+        value: "true"
+      # --- Sécurité ---
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: LOGIN_MAX_ATTEMPTS
+        value: "5"
+      - key: LOGIN_LOCK_MINUTES
+        value: "30"
+      # --- E-mails (SMTP réel, pas de dry-run en production) ---
+      - key: MAIL_DRY_RUN
+        value: "false"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        value: School Vie <no-reply@school-vie.local>
+      - key: RESET_PASSWORD_URL
+        value: https://school-vie-app.onrender.com/reinitialiser-mot-de-passe
+      - key: RESET_TOKEN_EXPIRES_MINUTES
+        value: "60"
+      # --- Seed initial (utilisés une seule fois via Render Shell) ---
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NOM
+        value: Administrateur
+      - key: ADMIN_PRENOM
+        value: École
+      - key: SCHOOL_NAME
+        value: School Vie
+
+  # ---------- Frontend React (PWA) ----------
+  - type: static
+    name: school-vie-app
+    runtime: static
+    region: frankfurt
+    branch: main
+    rootDir: school-app/client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      # VITE_API_URL est lu au BUILD (Vite) : il doit être renseigné ici,
+      # pas seulement dans le dashboard après le build.
+      - key: VITE_API_URL
+        value: https://school-vie-api.onrender.com/api

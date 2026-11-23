@@ -1,6 +1,7 @@
 // Point d'accès unique à la configuration : valide la présence des
 // variables indispensables au démarrage et échoue clairement sinon.
 require('dotenv').config();
+const path = require('path');
 
 const required = ['DB_USER', 'DB_NAME', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
 const missing = required.filter((key) => !process.env[key]);
@@ -15,12 +16,18 @@ module.exports = {
   nodeEnv: process.env.NODE_ENV || 'development',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
 
+  // Dossier des fichiers uploadés. En production Render, on le pointe vers
+  // le disque persistant monté sur /data (voir render.yaml + DEPLOY.md).
+  uploadsDir: process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', 'uploads'),
+
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME,
+    // La plupart des MySQL managés (Aiven, Railway…) exigent TLS.
+    ssl: String(process.env.DB_SSL || 'false') === 'true' ? { rejectUnauthorized: false } : undefined,
   },
 
   jwt: {

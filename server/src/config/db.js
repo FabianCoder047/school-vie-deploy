@@ -13,6 +13,7 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   decimalNumbers: false, // les DECIMAL restent des chaînes : aucun flottant sur les montants
+  ...(env.db.ssl ? { ssl: env.db.ssl } : {}),
 });
 
 module.exports = pool;

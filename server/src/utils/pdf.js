@@ -6,6 +6,7 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 const settingsRepo = require('../repositories/settingsRepository');
+const { DOSSIER_UPLOADS } = require('../config/uploads');
 
 const BLEU = '#1d4ed8';
 const BLEU_CLAIR = '#eff6ff';
@@ -18,7 +19,7 @@ async function lireCheminLogo() {
     const s = await settingsRepo.get();
     if (!s?.logo_path || !s.logo_path.startsWith('/uploads/')) return null;
     const segments = s.logo_path.split('/').filter((seg) => seg && seg !== '..' && seg !== '.'); // uploads / logo / fichier.png
-    const disque = path.join(__dirname, '..', '..', ...segments);
+    const disque = path.join(DOSSIER_UPLOADS, ...segments.slice(1));
     return fs.existsSync(disque) ? disque : null;
   } catch {
     return null;

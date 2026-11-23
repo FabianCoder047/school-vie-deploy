@@ -6,8 +6,9 @@ const path = require('path');
 const crypto = require('crypto');
 const settingsService = require('../services/settingsService');
 const { ApiError } = require('../utils/ApiError');
+const { DOSSIER_UPLOADS } = require('../config/uploads');
 
-const DOSSIER_SIGNATURE = path.join(__dirname, '..', '..', 'uploads', 'signature');
+const DOSSIER_SIGNATURE = path.join(DOSSIER_UPLOADS, 'signature');
 const PREFIXE = '/uploads/signature/';
 
 /** POST /api/directeur/signature — body { image: "data:image/png;base64,..." } (dessinée) */

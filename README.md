@@ -577,8 +577,11 @@ proprement : l'ancien fichier est supprimé du disque.
   Professeur (+absences mois), Comptable (déjà : jour/mois/impayés/taux +
   graphiques), Parent (sections messages).
 - **Déploiement** : `npm run build` (client) → build statique servi par un
-  serveur/reverse-proxy (nginx/caddy) + PM2 ou Docker pour le back ;
-  variables d'environnement comme en dev (DB_*, JWT_*, SMTP_* avec
+  serveur/reverse-proxy (nginx/caddy) + PM2 ou Docker pour le back.
+  **Hébergement recommandé : Render + MySQL managé externe → voir
+  [`DEPLOY.md`](DEPLOY.md) (blueprint `render.yaml`, PWA installable,
+  disque persistant pour les uploads, procédure pas-à-pas).**
+  Variables d'environnement comme en dev (DB_*, JWT_*, SMTP_* avec
   `MAIL_DRY_RUN=false` et `SMTP_PASS` renseigné, `CLIENT_URL` en HTTPS).
   Sauvegarde de la base : `mysqldump school_vie_db_004774 > backup-$(date +%F).sql`.
 
