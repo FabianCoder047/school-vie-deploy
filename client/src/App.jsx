@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRedirect from './routes/RoleRedirect';
@@ -59,10 +60,24 @@ import EmploiDuTempsEnfant from './pages/parent/EmploiDuTemps';
 import Finance from './pages/parent/Finance';
 import DashboardParent from './pages/parent/DashboardParent';
 import MaintenanceAdmin from './pages/admin/Maintenance';
+import { urlUpload } from './utils/uploads';
 
 export default function App() {
   const { user, chargement } = useAuth();
   const maintenance = useMaintenance();
+  const logoEcole = maintenance.etablissement?.logo_path;
+
+  // Favicon = logo de l'établissement dès qu'il est uploadé.
+  useEffect(() => {
+    if (!logoEcole) return;
+    let lien = document.querySelector("link[rel~='icon']");
+    if (!lien) {
+      lien = document.createElement('link');
+      lien.rel = 'icon';
+      document.head.appendChild(lien);
+    }
+    lien.href = urlUpload(logoEcole);
+  }, [logoEcole]);
 
   // Garde globale : pendant la maintenance, personne n'accède au site SAUF
   // l'administrateur (qui voit le site complet + un bandeau d'information).

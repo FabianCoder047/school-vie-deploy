@@ -36,6 +36,26 @@
 - Aucune donnée métier n'est mise en cache : seuls l'app shell (JS/CSS/HTML) est
   précaché ; les appels `/api/*` et `/uploads/*` sont exclus du cache.
 
+### Logo de l'école
+
+Le logo uploadé dans *Paramètres de l'école* est désormais utilisé **partout** :
+barre latérale, en-tête, pages de connexion / mot de passe, page de maintenance,
+**favicon du navigateur** et aperçu des paramètres (repli sur le logo par défaut
+si aucun logo n'a été uploadé).
+
+L'icône d'installation de la PWA est, elle, générée au **build** depuis un fichier
+local. Pour qu'elle représente l'école, déposez le logo dans le dépôt puis :
+
+```bash
+cd school-app/client
+SCHOOL_LOGO_FILE=/chemin/vers/le-logo-de-lecole.png npm run pwa:icons
+npm run build
+```
+
+Le script `scripts/generate-pwa-icons.mjs` (sharp) recrée `icon-192`, `icon-512`,
+`maskable-512` (marge de sécurité Android), `apple-touch-icon` (180) et
+`favicon-32` avec le logo, puis le build les embarque dans le manifest.
+
 ### Checklist de vérification après mise en ligne
 
 1. Ouvrir l'URL **en HTTPS** (obligatoire pour le service worker, sauf `localhost`).

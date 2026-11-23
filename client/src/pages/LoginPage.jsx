@@ -8,7 +8,7 @@ import Input from '../components/Input';
 import PasswordInput from '../components/PasswordInput';
 import AuthVisual from '../components/AuthVisual';
 import { LoginIcon } from '../components/icons';
-import logo from '../assets/logo.svg';
+import SchoolLogo from '../components/SchoolLogo';
 
 export default function LoginPage() {
   const { user, chargement, connexion, tableauDeBord } = useAuth();
@@ -48,7 +48,7 @@ export default function LoginPage() {
         {/* Formulaire à DROITE */}
         <main className="auth-formulaire">
           <form className="auth-carte" onSubmit={onSubmit} noValidate>
-            <img src={logo} alt="Logo de l'établissement" className="auth-logo" />
+            <SchoolLogo className="auth-logo" />
             <h1 className="auth-titre">School Vie</h1>
             <p className="auth-sous-titre">Gestion d’établissement scolaire — connectez-vous avec votre e-mail ou votre numéro de téléphone.</p>
 

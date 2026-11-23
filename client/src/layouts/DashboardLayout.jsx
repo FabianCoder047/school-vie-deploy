@@ -11,7 +11,7 @@ import { ROLE_ESPACE } from '../routes/roleRoutes';
 import { IconBell, IconLogout, IconMenu, IconMaintenance } from './sidebarIcons';
 import Badge from '../components/Badge';
 import InstallPwaButton from '../components/InstallPwaButton';
-import logo from '../assets/logo.svg';
+import SchoolLogo from '../components/SchoolLogo';
 
 const TYPE_LIB = { COMMUNIQUE: 'Communiqué', SCOLARITE: 'Scolarité', RELANCE: 'Relance', ABSENCE: 'Absence', RETARD: 'Retard', PRESENCE: 'Présence', SYSTEME: 'Système' };
 const TYPE_COULEUR = { COMMUNIQUE: 'bleu', SCOLARITE: 'vert', RELANCE: 'jaune', ABSENCE: 'rouge', RETARD: 'jaune', PRESENCE: 'vert', SYSTEME: 'gris' };
@@ -146,7 +146,7 @@ export default function DashboardLayout() {
       {/* ===== Sidebar (fixe sur bureau, barre d'onglets en bas sur mobile/tablette) ===== */}
       <aside className="sidebar" aria-label="Navigation principale" ref={barreRef}>
         <div className="sidebar-logo">
-          <img src={logo} alt="Logo de l'établissement" />
+          <SchoolLogo />
           <div>
             <div className="sidebar-logo-nom">School Vie</div>
             <div className="sidebar-logo-sous">Gestion d’établissement</div>
@@ -194,7 +194,7 @@ export default function DashboardLayout() {
               <IconMenu />
             </button>
             <div className="topbar-espace">
-              <img src={logo} alt="Logo de l'établissement" />
+              <SchoolLogo />
               <span>{ROLE_ESPACE[user?.role] || 'Espace'}</span>
             </div>
           </div>

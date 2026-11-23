@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import AuthVisual from '../components/AuthVisual';
 import { MailIcon } from '../components/icons';
-import logo from '../assets/logo.svg';
+import SchoolLogo from '../components/SchoolLogo';
 
 export default function ForgotPasswordPage() {
   const [identifier, setIdentifier] = useState('');
@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
 
         <main className="auth-formulaire">
           <form className="auth-carte" onSubmit={onSubmit} noValidate>
-            <img src={logo} alt="Logo de l'établissement" className="auth-logo" />
+            <SchoolLogo className="auth-logo" />
             <h1 className="auth-titre">Mot de passe oublié</h1>
             <p className="auth-sous-titre">Indiquez votre e-mail ou votre téléphone : nous vous enverrons un lien de réinitialisation.</p>
 

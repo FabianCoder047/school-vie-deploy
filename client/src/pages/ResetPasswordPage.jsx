@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import PasswordInput from '../components/PasswordInput';
 import AuthVisual from '../components/AuthVisual';
 import { KeyIcon, LoginIcon } from '../components/icons';
-import logo from '../assets/logo.svg';
+import SchoolLogo from '../components/SchoolLogo';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
       <div className="auth-layout auth-layout--inverse">
         <main className="auth-formulaire">
           <form className="auth-carte" onSubmit={onSubmit} noValidate>
-            <img src={logo} alt="Logo de l'établissement" className="auth-logo" />
+            <SchoolLogo className="auth-logo" />
             <h1 className="auth-titre">Réinitialiser le mot de passe</h1>
             <p className="auth-sous-titre">Choisissez un nouveau mot de passe (8 caractères minimum, avec majuscule, minuscule et chiffre).</p>
 

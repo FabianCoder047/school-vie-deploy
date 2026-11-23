@@ -2,16 +2,11 @@
 // joignent ici un scan/photo « en cas de quoi » (contrôle, litige…).
 import { useRef, useState } from 'react';
 import api, { messageErreur } from '../api/axios';
+import { urlUpload } from '../utils/uploads';
 import Badge from './Badge';
 import Button from './Button';
 
-/** URL absolue d'un fichier /uploads/… (origine déduite de VITE_API_URL). */
-export function urlUpload(chemin) {
-  if (!chemin) return null;
-  if (String(chemin).startsWith('http')) return chemin;
-  const origine = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
-  return `${origine}${chemin}`;
-}
+export { urlUpload };
 
 export default function UploadPreuveRecu({ base, paymentId, preuve, onChange, compact = false }) {
   const inputRef = useRef(null);

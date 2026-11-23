@@ -9,7 +9,7 @@ import Button from '../components/Button';
 import PasswordInput from '../components/PasswordInput';
 import AuthVisual from '../components/AuthVisual';
 import { KeyIcon } from '../components/icons';
-import logo from '../assets/logo.svg';
+import SchoolLogo from '../components/SchoolLogo';
 
 const REGLES = [
   { id: 'longueur', label: 'Au moins 8 caractères', test: (v) => v.length >= 8 },
@@ -62,7 +62,7 @@ export default function ChangePasswordPage() {
         {/* Formulaire à GAUCHE */}
         <main className="auth-formulaire">
           <form className="auth-carte" onSubmit={onSubmit} noValidate>
-            <img src={logo} alt="Logo de l'établissement" className="auth-logo" />
+            <SchoolLogo className="auth-logo" />
             <h1 className="auth-titre">{force ? 'Changement de mot de passe' : 'Changer votre mot de passe'}</h1>
             <p className="auth-sous-titre">
               {force
