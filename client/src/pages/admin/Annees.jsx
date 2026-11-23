@@ -1,4 +1,5 @@
 // Années académiques — création, édition, définition de l'année courante.
+// Partagé : Admin, Directeur et Secrétaire (si le Directeur lui délègue la tâche).
 import { useState } from 'react';
 import api, { messageErreur } from '../../api/axios';
 import { usePaginatedResource } from '../../hooks/usePaginatedResource';
@@ -25,7 +26,7 @@ function ecartEnMois(d1, d2) {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
 
-export default function AnneesPage() {
+export default function AnneesPage({ base = '/admin' }) {
   const toast = useToast();
   const { supprimer, confirmer } = useConfirm();
   const liste = usePaginatedResource('/annees-academiques');
@@ -55,8 +56,8 @@ export default function AnneesPage() {
     setEnvoi(true);
     try {
       const payload = { libelle: form.libelle.trim(), date_debut: form.date_debut, date_fin: form.date_fin };
-      if (enEdition) await api.put(`/admin/annees-academiques/${enEdition.id}`, payload);
-      else await api.post('/admin/annees-academiques', payload);
+      if (enEdition) await api.put(`${base}/annees-academiques/${enEdition.id}`, payload);
+      else await api.post(`${base}/annees-academiques`, payload);
       toast.succes(enEdition ? 'Année mise à jour.' : 'Année créée.');
       setModalOuvert(false);
       liste.recharger();
@@ -77,7 +78,7 @@ export default function AnneesPage() {
     });
     if (!ok) return;
     try {
-      await api.post(`/admin/annees-academiques/${annee.id}/courante`);
+      await api.post(`${base}/annees-academiques/${annee.id}/courante`);
       toast.succes(`Année ${annee.libelle} définie comme courante.`);
       liste.recharger();
     } catch (err) {
@@ -89,7 +90,7 @@ export default function AnneesPage() {
     const ok = await supprimer(`Supprimer l’année « ${annee.libelle} » ?`, 'Supprimer l’année');
     if (!ok) return;
     try {
-      await api.delete(`/admin/annees-academiques/${annee.id}`);
+      await api.delete(`${base}/annees-academiques/${annee.id}`);
       toast.succes('Année supprimée.');
       liste.recharger();
     } catch (err) {

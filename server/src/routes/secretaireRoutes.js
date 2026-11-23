@@ -63,4 +63,10 @@ router.post('/communiques', validate(communiqueSchema), documents.publierCommuni
 const presenceStats = require('../controllers/presenceStatsController');
 router.get('/statistiques-presences', presenceStats.statistiques);
 
+/* ===== Tâches déléguées par le Directeur ===== */
+/* Matières, affectations, années — interrupteurs vérifiés dans structureRoutes. */
+router.use('/', require('./structureRoutes'));
+/* Paiements de scolarité (si le Comptable est absent). */
+router.use('/comptabilite', require('./paiementsDeleguesRoutes'));
+
 module.exports = router;

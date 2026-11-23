@@ -1,7 +1,15 @@
 // Paramètres de l'école (ligne unique id = 1) + uploads (logo, signature, cachet).
 const pool = require('../config/db');
 
-const PUBLIC = 'id, nom, logo_path, adresse, bp, ville, pays, telephone, email, directeur_nom, signature_path, cachet_path, devise, note_max, duree_heure_minutes, debut_journee, pause_matin_debut, pause_matin_fin, fin_matin, debut_apres_midi, fin_apres_midi, fin_primaire, cartes_impression_autorisee, bulletins_impression_autorisee, proclamations_impression_autorisee, edts_impression_autorisee';
+const PUBLIC = 'id, nom, logo_path, adresse, bp, ville, pays, telephone, email, directeur_nom, signature_path, cachet_path, devise, note_max, duree_heure_minutes, debut_journee, pause_matin_debut, pause_matin_fin, fin_matin, debut_apres_midi, fin_apres_midi, fin_primaire, cartes_impression_autorisee, bulletins_impression_autorisee, proclamations_impression_autorisee, edts_impression_autorisee, matieres_secretaire_autorisee, affectations_secretaire_autorisee, annees_secretaire_autorisee, inscriptions_comptable_autorisee, paiements_secretaire_autorisee';
+
+const CLES_DELEGATION = [
+  'matieres_secretaire_autorisee',
+  'affectations_secretaire_autorisee',
+  'annees_secretaire_autorisee',
+  'inscriptions_comptable_autorisee',
+  'paiements_secretaire_autorisee',
+];
 
 async function get() {
   const [[row]] = await pool.query(`SELECT ${PUBLIC} FROM school_settings WHERE id = 1`);
@@ -55,6 +63,30 @@ async function updateCachet(cachetPath) {
   return get();
 }
 
+/* --- Délégations de tâches (interrupteurs pilotés par le Directeur) --- */
+
+/** Lecture des 5 indicateurs de délégation (utilisée par le middleware et le front). */
+async function lireDelegations() {
+  const [[row]] = await pool.query(
+    `SELECT ${CLES_DELEGATION.join(', ')} FROM school_settings WHERE id = 1`
+  );
+  if (!row) return null;
+  const resultat = {};
+  for (const cle of CLES_DELEGATION) resultat[cle] = Boolean(row[cle]);
+  return resultat;
+}
+
+/** Enregistre tout ou partie des indicateurs de délégation. */
+async function updateDelegations(valeurs) {
+  const presents = CLES_DELEGATION.filter((cle) => Object.prototype.hasOwnProperty.call(valeurs, cle));
+  if (presents.length === 0) return lireDelegations();
+  await pool.query(
+    `UPDATE school_settings SET ${presents.map((cle) => `${cle} = ?`).join(', ')} WHERE id = 1`,
+    presents.map((cle) => (valeurs[cle] ? 1 : 0))
+  );
+  return lireDelegations();
+}
+
 /* --- Fenêtre de maintenance (colonnes 007_maintenance.sql) --- */
 
 const MAINTENANCE = 'nom, logo_path, maintenance_debut, maintenance_fin, maintenance_message';
@@ -80,4 +112,8 @@ async function arreterMaintenance() {
   return getMaintenance();
 }
 
-module.exports = { get, update, updateLogo, updateSignature, updateCachet, setAutorisationImpression, getMaintenance, updateMaintenance, arreterMaintenance };
+module.exports = {
+  get, update, updateLogo, updateSignature, updateCachet, setAutorisationImpression,
+  lireDelegations, updateDelegations, CLES_DELEGATION,
+  getMaintenance, updateMaintenance, arreterMaintenance,
+};

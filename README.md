@@ -226,7 +226,8 @@ Le front n'a qu'une variable : `VITE_API_URL` (défaut `http://localhost:5000/ap
 ## Tests manuels — Sprint 0
 
 ```bash
-# 1. Migration + seed
+# 1. Migration + seed (la migration 012 ajoute les 5 colonnes de délégation
+#    dans school_settings — instructions détaillées dans le message de commit)
 cd server && npm run migrate && npm run seed
 
 # 2. API en marche, puis :
@@ -260,6 +261,7 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
 | 4 | Documents PDF (cartes 8/page avec QR, bulletins modèle togolais — une page A4 par élève, rangs 1er/2ème par matière et général, résultats de tous les trimestres, jamais stockés), communiqués ciblés (tous/rôle/cycle/classe/alias), notifications réelles (badge/cloche), espace Parent (notes, EDT, situation financière — consultation lecture seule) | ✅ Livré |
 | 5 | Sauvegardes par année académique sous l'Administrateur + KPI sur tous les dashboards + revue sécurité + 28 tests automatisés + déploiement + gestion du profil (`/profil`) | ✅ Livré |
 | 6 | Liste de renvoi (Comptable, classe entière, PDF signatures Comptable/Directeur) ; Emploi du temps / Cartes / Bulletins / Fiches de proclamation / Communiqués accessibles à la Secrétaire (bulletins & cartes protégés par le **feu vert** du Directeur) ; gestion des alias de classe déléguée à la Secrétaire ; onglet Journal d'activités (Admin — toutes les activités de tout le monde) ; onglet Communiqués dans tous les espaces | ✅ Livré |
+| 7 | Délégations pilotées par le Directeur (matières/affectations, années, inscriptions, paiements) avec contrôle API et journalisation ; vue Directeur sur les matières/affectations/années et le journal ; adresse de l’établissement en lecture seule dans *Mon profil* | ✅ Livré |
 
 ## Décisions & limites documentées
 
@@ -448,14 +450,34 @@ Un compte d'un rôle X ne peut pas ouvrir l'URL d'un autre rôle (redirection + 
   ouverte à tout utilisateur authentifié. Aucun feu vert requis : la délégation
   est permanente. Un alias utilisé (inscription, affectation, EDT) ne peut pas
   être supprimé (`409 ENTITY_IN_USE`).
+- **Délégations de tâches (migration `012`)** : le Directeur pilote 5
+  interrupteurs dans *Paramètres de l’école → Délégations de tâches* :
+  création des matières et affectations (Secrétaire — **actives par défaut**),
+  années académiques (Secrétaire — inactive par défaut), inscriptions
+  (Comptable — inactive par défaut), paiements de scolarité (Secrétaire —
+  inactive par défaut). Les menus correspondants n’apparaissent que si la
+  délégation est active, mais la sécurité est vérifiée côté API
+  (`middlewares/exigerDelegation.js`, code `DELEGATION_REQUIRED`). Routes :
+  `GET /api/delegations` (tous), `PUT /api/directeur/delegations` (Directeur),
+  `/api/secretaire/{subjects,affectations,affectations-professeur,annees-academiques}`,
+  `/api/comptable/inscriptions/*`, `/api/secretaire/comptabilite/*`. Les écrans
+  sont partagés (props `base` sur `Matieres`, `Annees`, `Affectations`,
+  `NouvelEleve`, `Paiements`, `Journal`) ; le Directeur a une **vue** des
+  matières (`/directeur/matieres`, lecture seule) et des affectations, crée ses
+  années (`/directeur/annees`) et consulte le journal (`/directeur/journal`).
 - **Paramètres de l'école** : maintenus dans l'espace **Directeur** (choix
   confirmé). Incohérence documentée : les tests Sprint 1 le plaçaient côté Admin ;
   il a été déplacé au Sprint Documents, puis confirmé côté Directeur.
-- **Journal d'activités (Admin)** : `/admin/journal` — lecture paginée de
+- **Journal d'activités (Admin + Directeur)** : `/admin/journal` et
+  `/directeur/journal` — lecture paginée de
   `audit_logs` enrichie (auteur joint, rôle), filtres : recherche (auteur),
   action, entité, période ; détail d'une ligne (avant/après en JSON).
   Journalise désormais aussi : `GENERATE_CARTES` / `GENERATE_BULLETINS`
-  (PDF générés, avec alias/cycle + rôle) et `LISTE_RENVOI`.
+  (PDF générés, avec alias/cycle + rôle), `LISTE_RENVOI` et
+  `UPDATE_DELEGATIONS` (avec l’état avant/après de tous les interrupteurs).
+  Toute action réalisée au titre d’une délégation est journalisée avec
+  l’identité de son auteur (création de matière, affection, inscription,
+  paiement…).
 - **Communiqués — onglet dans tous les espaces** : `/communiques`
   (lecture seule, filtré) ajouté pour Admin / Comptable / Professeur / Parent ;
   Directeur et Secrétaire publient et voient tout (avec l'éditeur existant).

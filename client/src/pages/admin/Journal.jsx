@@ -17,7 +17,7 @@ import Modal from '../../components/Modal';
 const ROLE_LABELS = { ADMIN: 'Admin', DIRECTEUR: 'Directeur', SECRETAIRE: 'Secrétaire', COMPTABLE: 'Comptable', PROFESSEUR: 'Professeur', PARENT: 'Parent' };
 const ROLE_COULEURS = { ADMIN: 'bleu', DIRECTEUR: 'bleu', SECRETAIRE: 'vert', COMPTABLE: 'jaune', PROFESSEUR: 'bleu', PARENT: 'vert' };
 
-export default function JournalPage() {
+export default function JournalPage({ base = '/admin' }) {
   const [actionFiltre, setActionFiltre] = useState('');
   const [entiteFiltre, setEntiteFiltre] = useState('');
   const [dateDebut, setDateDebut] = useState('');
@@ -27,12 +27,12 @@ export default function JournalPage() {
   const [detail, setDetail] = useState(null);
 
   useEffect(() => {
-    api.get('/admin/journal/filtres')
+    api.get(`${base}/journal/filtres`)
       .then(({ data }) => { setActions(data.actions || []); setEntites(data.entities || []); })
       .catch(() => {});
-  }, []);
+  }, [base]);
 
-  const liste = usePaginatedResource('/admin/journal', {
+  const liste = usePaginatedResource(`${base}/journal`, {
     ...(actionFiltre ? { action: actionFiltre } : {}),
     ...(entiteFiltre ? { entity: entiteFiltre } : {}),
     ...(dateDebut ? { date_debut: dateDebut } : {}),

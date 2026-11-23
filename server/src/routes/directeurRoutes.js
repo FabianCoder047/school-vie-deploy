@@ -3,12 +3,15 @@ const express = require('express');
 const comptes = require('../controllers/accountsController');
 const affectations = require('../controllers/affectationController');
 const settings = require('../controllers/settingsAndDashboardController');
+const referentiel = require('../controllers/referentielController');
+const journal = require('../controllers/journalController');
 const frais = require('../controllers/fraisController');
 const pedagogie = require('./pedagogieRoutes');
 const { validate } = require('../middlewares/validate');
 const {
   creationCompteSchema, statutCompteSchema, aliasSchema,
   affectationMatiereSchema, affectationProfesseurSchema, parametresSchema,
+  anneeAcademiqueSchema, delegationsSchema,
 } = require('../validators/configurationValidators');
 const { fraisUnitaireSchema, fraisGroupeSchema } = require('../validators/inscriptionValidators');
 
@@ -62,6 +65,21 @@ router.post('/parametres/cachet', (req, res, next) => {
   uploadCachet.single('cachet')(req, res, (err) => (err ? multerErrorHandler(err, req, res, next) : next()));
 }, settings.uploadCachet);
 router.delete('/parametres/cachet', settings.supprimerCachet);
+
+/* Délégations de tâches (le Directeur décide, chaque bascule est journalisée) */
+router.get('/delegations', settings.lireDelegations);
+router.put('/delegations', validate(delegationsSchema), settings.modifierDelegations);
+
+/* Années académiques — le Directeur peut les créer lui-même ou déléguer à la Secrétaire */
+router.get('/annees-academiques', referentiel.listerAnnees);
+router.post('/annees-academiques', validate(anneeAcademiqueSchema), referentiel.creerAnnee);
+router.put('/annees-academiques/:id', validate(anneeAcademiqueSchema), referentiel.modifierAnnee);
+router.delete('/annees-academiques/:id', referentiel.supprimerAnnee);
+router.post('/annees-academiques/:id/courante', referentiel.definirAnneeCourante);
+
+/* Vue du Directeur sur toutes les activités (créations, délégations, paiements…) */
+router.get('/journal', journal.lister);
+router.get('/journal/filtres', journal.filtres);
 
 /* Frais de scolarité + modalités (cases à cocher) */
 router.get('/frais', frais.lister);

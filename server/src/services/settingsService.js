@@ -73,6 +73,35 @@ async function modifierParametres(data, actorId, ip) {
   return settings;
 }
 
+/** Lecture des délégations de tâches (tous les rôles connectés). */
+async function lireDelegations() {
+  const delegations = await settingsRepo.lireDelegations();
+  if (!delegations) throw ApiError.notFound('Paramètres de l’école non initialisés. Lancez npm run seed.');
+  return delegations;
+}
+
+/** Bascule des délégations par le Directeur — chaque changement est journalisé. */
+async function modifierDelegations(data, actorId, ip) {
+  const avant = await settingsRepo.lireDelegations();
+  const changes = {};
+  for (const cle of settingsRepo.CLES_DELEGATION) {
+    if (Object.prototype.hasOwnProperty.call(data, cle)) {
+      changes[cle] = Boolean(data[cle]);
+    }
+  }
+  const apres = await settingsRepo.updateDelegations(changes);
+  await audit({
+    userId: actorId,
+    action: 'UPDATE_DELEGATIONS',
+    entity: 'school_settings',
+    entityId: 1,
+    oldValues: avant,
+    newValues: apres,
+    ipAddress: ip,
+  });
+  return apres;
+}
+
 /** Enregistre le logo uploadé et remplace l'ancien fichier le cas échéant. */
 async function definirLogo(fichier, actorId, ip) {
   return definirImage({ fichier, actorId, ip, champ: 'logo_path', dossier: 'logo', action: 'UPDATE_LOGO' });
@@ -137,4 +166,8 @@ async function supprimerImage({ actorId, ip, champ, dossier, action, update }) {
   return settings;
 }
 
-module.exports = { lireParametres, modifierParametres, definirLogo, definirCachet, definirSignature, definirSignaturePath, supprimerSignature, supprimerCachet, DOSSIER_UPLOADS, URL_PUBLIQUE };
+module.exports = {
+  lireParametres, modifierParametres, lireDelegations, modifierDelegations,
+  definirLogo, definirCachet, definirSignature, definirSignaturePath,
+  supprimerSignature, supprimerCachet, DOSSIER_UPLOADS, URL_PUBLIQUE,
+};

@@ -40,4 +40,7 @@ router.get('/rapports/pdf', controleur.rapportPdf);
 /* Tableau de bord */
 router.get('/dashboard', controleur.dashboard);
 
+/* Inscriptions déléguées par le Directeur (si la Secrétaire est absente) */
+router.use('/inscriptions', require('./inscriptionRoutes'));
+
 module.exports = router;

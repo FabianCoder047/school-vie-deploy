@@ -33,6 +33,9 @@ export default function DashboardLayout() {
   const [menuMasque, setMenuMasque] = useState(() => {
     try { return window.localStorage.getItem('school-vie.menu-masque') === '1'; } catch { return false; }
   });
+  // Délégations décidées par le Directeur : masquent les menus non autorisés.
+  // L'API vérifie aussi chaque action (sécurité côté serveur).
+  const [delegations, setDelegations] = useState({});
   const toggleMenu = () => {
     setMenuMasque((precedent) => {
       const valeur = !precedent;
@@ -41,7 +44,17 @@ export default function DashboardLayout() {
     });
   };
 
-  const menu = SIDEBAR_MENUS[user?.role] || [];
+  useEffect(() => {
+    let actif = true;
+    api.get('/delegations').then(({ data }) => { if (actif) setDelegations(data || {}); }).catch(() => {});
+    return () => { actif = false; };
+  }, []);
+
+  const menuBrut = SIDEBAR_MENUS[user?.role] || [];
+  const menu = menuBrut
+    .filter((item) => item.section || !item.delegation || delegations[item.delegation])
+    // Supprime les en-têtes de section devenus vides après filtrage.
+    .filter((item, index, liste) => (item.section ? Boolean(liste[index + 1] && !liste[index + 1].section) : true));
 
   const chargerNotifications = useCallback(async (page = 1, append = false) => {
     setChargementNotifs(true);

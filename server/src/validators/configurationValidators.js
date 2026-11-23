@@ -98,6 +98,15 @@ const affectationProfesseurSchema = z.object({
   })).min(1, 'Sélectionnez au moins une matière et un alias.'),
 });
 
+/* ===== Délégations de tâches (bascules du Directeur) ===== */
+const delegationsSchema = z.object({
+  matieres_secretaire_autorisee: z.boolean().optional(),
+  affectations_secretaire_autorisee: z.boolean().optional(),
+  annees_secretaire_autorisee: z.boolean().optional(),
+  inscriptions_comptable_autorisee: z.boolean().optional(),
+  paiements_secretaire_autorisee: z.boolean().optional(),
+});
+
 /* ===== Feu vert du directeur (impression cartes / bulletins) ===== */
 const impressionSchema = z.object({
   autorisee: z.boolean({ errorMap: () => ({ message: 'La valeur « autorisee » (true/false) est requise.' }) }),
@@ -116,4 +125,5 @@ module.exports = {
   affectationProfesseurSchema,
   impressionSchema,
   maintenanceSchema,
+  delegationsSchema,
 };

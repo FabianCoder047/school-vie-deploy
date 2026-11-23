@@ -11,7 +11,7 @@ import Button from '../../components/Button';
 import Select from '../../components/Select';
 import Badge from '../../components/Badge';
 
-export default function AffectationsPage() {
+export default function AffectationsPage({ base = '/directeur' }) {
   const [onglet, setOnglet] = useState('matiere');
   return (
     <>
@@ -24,7 +24,7 @@ export default function AffectationsPage() {
           { id: 'professeur', label: 'Professeur → matière × alias' },
         ]}
       />
-      {onglet === 'matiere' ? <OngletMatiere /> : <OngletProfesseur />}
+      {onglet === 'matiere' ? <OngletMatiere base={base} /> : <OngletProfesseur base={base} />}
     </>
   );
 }
@@ -32,7 +32,7 @@ export default function AffectationsPage() {
 /* ================================================================
    ONGLET 1 — Matière → classes + coefficient par classe
    ================================================================ */
-function OngletMatiere() {
+function OngletMatiere({ base }) {
   const toast = useToast();
   const { supprimer } = useConfirm();
   const [matieres, setMatieres] = useState([]);
@@ -50,7 +50,7 @@ function OngletMatiere() {
 
   const rechargerAffectations = useCallback((id) => {
     if (!id) { setAffectationsActuelles([]); return; }
-    api.get(`/directeur/affectations?subject_id=${id}`)
+    api.get(`${base}/affectations?subject_id=${id}`)
       .then(({ data }) => {
         setAffectationsActuelles(data || []);
         const prochain = {};
@@ -58,7 +58,7 @@ function OngletMatiere() {
         setSelection(prochain);
       })
       .catch(() => setAffectationsActuelles([]));
-  }, []);
+  }, [base]);
 
   useEffect(() => { rechargerAffectations(matiereId); }, [matiereId, rechargerAffectations]);
 
@@ -84,7 +84,7 @@ function OngletMatiere() {
     if (lignes.length === 0) { setErreur('Sélectionnez au moins une classe avec un coefficient positif.'); return; }
     setEnvoi(true);
     try {
-      await api.post('/directeur/affectations', { subject_id: Number(matiereId), affectations: lignes });
+      await api.post(`${base}/affectations`, { subject_id: Number(matiereId), affectations: lignes });
       toast.succes('Affectations enregistrées.');
       rechargerAffectations(matiereId);
     } catch (err) {
@@ -98,7 +98,7 @@ function OngletMatiere() {
     const ok = await supprimer(`Retirer ${affectation.matiere_nom} de ${affectation.classe_nom} ?`, 'Retirer la matière');
     if (!ok) return;
     try {
-      await api.delete(`/directeur/affectations/${affectation.id}`);
+      await api.delete(`${base}/affectations/${affectation.id}`);
       toast.succes('Affectation retirée.');
       rechargerAffectations(matiereId);
     } catch (err) {
@@ -195,7 +195,7 @@ function OngletMatiere() {
 /* ================================================================
    ONGLET 2 — Professeur → (matière × alias × année)
    ================================================================ */
-function OngletProfesseur() {
+function OngletProfesseur({ base }) {
   const toast = useToast();
   const { supprimer } = useConfirm();
   const [professeurs, setProfesseurs] = useState([]);
@@ -209,14 +209,14 @@ function OngletProfesseur() {
   const [affectationsProf, setAffectationsProf] = useState([]);
 
   useEffect(() => {
-    api.get('/directeur/professeurs').then(({ data }) => setProfesseurs(data || [])).catch(() => setProfesseurs([]));
-    api.get('/directeur/affectations').then(({ data }) => setAffectationsMatiere(data || [])).catch(() => setAffectationsMatiere([]));
-  }, []);
+    api.get(`${base}/professeurs`).then(({ data }) => setProfesseurs(data || [])).catch(() => setProfesseurs([]));
+    api.get(`${base}/affectations`).then(({ data }) => setAffectationsMatiere(data || [])).catch(() => setAffectationsMatiere([]));
+  }, [base]);
 
   const rechargerAffectationsProf = useCallback((id) => {
-    const url = `/directeur/affectations-professeur${id ? `?teacher_id=${id}` : ''}`;
+    const url = `${base}/affectations-professeur${id ? `?teacher_id=${id}` : ''}`;
     api.get(url).then(({ data }) => setAffectationsProf(data || [])).catch(() => setAffectationsProf([]));
-  }, []);
+  }, [base]);
 
   useEffect(() => { rechargerAffectationsProf(profId); }, [profId, rechargerAffectationsProf]);
 
@@ -239,7 +239,7 @@ function OngletProfesseur() {
     if (!choixCs || lignes.length === 0) { setErreur('Choisissez une matière et au moins un alias.'); return; }
     setSauvegardeEnCours(true);
     try {
-      await api.post('/directeur/affectations-professeur', { teacher_id: Number(profId), affectations: lignes });
+      await api.post(`${base}/affectations-professeur`, { teacher_id: Number(profId), affectations: lignes });
       toast.succes('Professeur affecté.');
       setChoixCs('');
       setAliasCoches({});
@@ -255,7 +255,7 @@ function OngletProfesseur() {
     const ok = await supprimer(`Retirer ${affectation.prof_prenom} ${affectation.prof_nom} de ${affectation.matiere_nom} (${affectation.alias_nom}) ?`, 'Retirer l’affectation');
     if (!ok) return;
     try {
-      await api.delete(`/directeur/affectations-professeur/${affectation.id}`);
+      await api.delete(`${base}/affectations-professeur/${affectation.id}`);
       toast.succes('Affectation retirée.');
       rechargerAffectationsProf(profId);
     } catch (err) {

@@ -113,7 +113,10 @@ export default function App() {
         <Route path="directeur" element={<ProtectedRoute roles={['DIRECTEUR']}><DashboardDirecteur /></ProtectedRoute>} />
         <Route path="directeur/utilisateurs" element={<ProtectedRoute roles={['DIRECTEUR']}><Utilisateurs /></ProtectedRoute>} />
         <Route path="directeur/alias" element={<ProtectedRoute roles={['DIRECTEUR']}><Alias /></ProtectedRoute>} />
+        <Route path="directeur/matieres" element={<ProtectedRoute roles={['DIRECTEUR']}><Matieres base="/directeur" lectureSeule /></ProtectedRoute>} />
+        <Route path="directeur/annees" element={<ProtectedRoute roles={['DIRECTEUR']}><Annees base="/directeur" /></ProtectedRoute>} />
         <Route path="directeur/affectations" element={<ProtectedRoute roles={['DIRECTEUR']}><Affectations /></ProtectedRoute>} />
+        <Route path="directeur/journal" element={<ProtectedRoute roles={['DIRECTEUR']}><Journal base="/directeur" /></ProtectedRoute>} />
         <Route path="directeur/parametres" element={<ProtectedRoute roles={['DIRECTEUR']}><Parametres /></ProtectedRoute>} />
         <Route path="directeur/frais" element={<ProtectedRoute roles={['DIRECTEUR']}><Frais /></ProtectedRoute>} />
         <Route path="directeur/periodes" element={<ProtectedRoute roles={['DIRECTEUR']}><Periodes /></ProtectedRoute>} />
@@ -136,6 +139,10 @@ export default function App() {
         <Route path="secretaire/nouvel-eleve" element={<ProtectedRoute roles={['SECRETAIRE']}><NouvelEleve /></ProtectedRoute>} />
         <Route path="secretaire/eleves" element={<ProtectedRoute roles={['SECRETAIRE']}><Eleves /></ProtectedRoute>} />
         <Route path="secretaire/alias" element={<ProtectedRoute roles={['SECRETAIRE']}><AliasEspace espace="secretaire" /></ProtectedRoute>} />
+        <Route path="secretaire/matieres" element={<ProtectedRoute roles={['SECRETAIRE']}><Matieres base="/secretaire" /></ProtectedRoute>} />
+        <Route path="secretaire/annees" element={<ProtectedRoute roles={['SECRETAIRE']}><Annees base="/secretaire" /></ProtectedRoute>} />
+        <Route path="secretaire/affectations" element={<ProtectedRoute roles={['SECRETAIRE']}><Affectations base="/secretaire" /></ProtectedRoute>} />
+        <Route path="secretaire/paiements" element={<ProtectedRoute roles={['SECRETAIRE']}><Paiements base="/secretaire/comptabilite" /></ProtectedRoute>} />
         <Route path="secretaire/statistiques-presences" element={<ProtectedRoute roles={['SECRETAIRE']}><StatistiquesPresences base="/secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/edt" element={<ProtectedRoute roles={['SECRETAIRE']}><EmploiDuTempsEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/cartes" element={<ProtectedRoute roles={['SECRETAIRE']}><CartesEspace espace="secretaire" /></ProtectedRoute>} />
@@ -143,6 +150,7 @@ export default function App() {
         <Route path="secretaire/proclamations" element={<ProtectedRoute roles={['SECRETAIRE']}><ProclamationsEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="secretaire/communiques" element={<ProtectedRoute roles={['SECRETAIRE']}><CommuniquesEspace espace="secretaire" /></ProtectedRoute>} />
         <Route path="comptable" element={<ProtectedRoute roles={['COMPTABLE']}><DashboardComptable /></ProtectedRoute>} />
+        <Route path="comptable/nouvel-eleve" element={<ProtectedRoute roles={['COMPTABLE']}><NouvelEleve base="/comptable/inscriptions" /></ProtectedRoute>} />
         <Route path="comptable/paiements" element={<ProtectedRoute roles={['COMPTABLE']}><Paiements /></ProtectedRoute>} />
         <Route path="comptable/comptes" element={<ProtectedRoute roles={['COMPTABLE']}><Comptes /></ProtectedRoute>} />
         <Route path="comptable/relances" element={<ProtectedRoute roles={['COMPTABLE']}><Relances /></ProtectedRoute>} />

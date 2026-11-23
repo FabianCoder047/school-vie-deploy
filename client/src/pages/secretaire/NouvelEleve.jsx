@@ -16,7 +16,7 @@ import UploadPreuveRecu from '../../components/UploadPreuveRecu';
 const ETAPES = ['Élève', 'Scolarité', 'Tuteur', 'Récapitulatif'];
 const MOYEN_LIB = { ESPECES: 'Espèces', FLOOZ: 'Flooz', MIXX_BY_YAS: 'Mixx By Yas' };
 
-export default function NouvelElevePage() {
+export default function NouvelElevePage({ base = '/secretaire' }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [etape, setEtape] = useState(0);
@@ -46,10 +46,10 @@ export default function NouvelElevePage() {
   const [preuve, setPreuve] = useState(null);
 
   useEffect(() => {
-    api.get('/secretaire/classes-pour-inscription')
+    api.get(`${base}/classes-pour-inscription`)
       .then(({ data }) => { setAnnee(data.annee); setLignesFrais(data.lignes || []); })
       .catch(() => setErreur('Impossible de charger les classes et les frais. Vérifiez que le Directeur a défini les frais de scolarité.'));
-  }, []);
+  }, [base]);
 
   const cycles = useMemo(() => {
     const map = new Map();
@@ -108,7 +108,7 @@ export default function NouvelElevePage() {
     setErreur('');
     setEnvoi(true);
     try {
-      const { data } = await api.post('/secretaire/eleves', {
+      const { data } = await api.post(`${base}/eleves`, {
         eleve: { ...eleve, nom: eleve.nom.trim(), prenom: eleve.prenom.trim(), lieu_naissance: eleve.lieu_naissance.trim(), adresse: eleve.adresse.trim(), sexe: eleve.sexe || null },
         tuteur: { ...tuteur, nom: tuteur.nom.trim(), prenom: tuteur.prenom.trim(), telephone_whatsapp: tuteur.telephone_whatsapp.trim(), email: tuteur.email.trim() || null },
         academique: { class_id: Number(classId), class_alias_id: Number(aliasId), modalite_paiement: modalite },
@@ -118,7 +118,7 @@ export default function NouvelElevePage() {
         const donnees = new FormData();
         donnees.append('photo', photo);
         try {
-          await api.post(`/secretaire/eleves/${data.enrollmentId}/photo`, donnees, { headers: { 'Content-Type': 'multipart/form-data' } });
+          await api.post(`${base}/eleves/${data.enrollmentId}/photo`, donnees, { headers: { 'Content-Type': 'multipart/form-data' } });
         } catch {
           toast.avertissement('Élève créé, mais la photo n’a pas pu être envoyée.');
         }
@@ -138,7 +138,7 @@ export default function NouvelElevePage() {
     setPaiementErreur('');
     setPaiementEnCours(true);
     try {
-      const { data } = await api.post(`/secretaire/eleves/${resultat.enrollmentId}/paiement-inscription`, {
+      const { data } = await api.post(`${base}/eleves/${resultat.enrollmentId}/paiement-inscription`, {
         moyen: paiement.moyen,
         reference_transaction: paiement.reference_transaction.trim() || null,
       });
@@ -211,12 +211,12 @@ export default function NouvelElevePage() {
             {recuId ? (
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
                 <p className="text-doux" style={{ fontSize: 13 }}>Remettez le reçu rempli à la main. Pour preuve, joignez son scan ci-dessous (« en cas de quoi »).</p>
-                <UploadPreuveRecu base="/secretaire" paymentId={recuId} preuve={preuve} onChange={setPreuve} />
+                <UploadPreuveRecu base={base} paymentId={recuId} preuve={preuve} onChange={setPreuve} />
               </div>
             ) : (
               <Button onClick={() => setModalPaiement(true)}>Marquer le paiement d’inscription</Button>
             )}
-            <Button variant="secondary" onClick={() => navigate('/secretaire/eleves')}>Voir la fiche élève</Button>
+            {base === '/secretaire' && <Button variant="secondary" onClick={() => navigate('/secretaire/eleves')}>Voir la fiche élève</Button>}
             <Button variant="ghost" onClick={recommencer}>Inscrire un autre élève</Button>
           </div>
         </Card>

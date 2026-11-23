@@ -11,7 +11,7 @@ async function lireProfil(userId) {
   const [[user]] = await pool.query(`SELECT ${PUBLIC} FROM users WHERE id = ?`, [userId]);
   if (!user) throw ApiError.notFound('Utilisateur introuvable.');
   const ecole = await settingsRepo.get();
-  return { user, ecole: ecole ? { nom: ecole.nom, logo_path: ecole.logo_path } : null };
+  return { user, ecole: ecole ? { nom: ecole.nom, logo_path: ecole.logo_path, adresse: ecole.adresse } : null };
 }
 
 async function modifierProfil(userId, data, ip) {
@@ -47,7 +47,7 @@ async function modifierProfil(userId, data, ip) {
   const ecole = await settingsRepo.get();
   const [[user]] = await pool.query(`SELECT ${PUBLIC} FROM users WHERE id = ?`, [userId]);
   await audit({ userId, action: 'PROFILE_UPDATE', entity: 'users', entityId: userId, oldValues: { nom: actuel.nom, prenom: actuel.prenom, email: actuel.email, telephone: actuel.telephone }, newValues: data, ipAddress: ip });
-  return { user, ecole: ecole ? { nom: ecole.nom, logo_path: ecole.logo_path } : null };
+  return { user, ecole: ecole ? { nom: ecole.nom, logo_path: ecole.logo_path, adresse: ecole.adresse } : null };
 }
 
 module.exports = { lireProfil, modifierProfil };

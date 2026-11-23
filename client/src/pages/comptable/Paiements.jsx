@@ -19,7 +19,7 @@ const STATUT_SCOLARITE = {
   EN_RETARD: { couleur: 'rouge', label: 'En retard' },
 };
 
-export default function PaiementsPage() {
+export default function PaiementsPage({ base = '/comptable' }) {
   const toast = useToast();
   const [search, setSearch] = useState('');
   const [resultats, setResultats] = useState([]);
@@ -36,13 +36,13 @@ export default function PaiementsPage() {
     let actif = true;
     setChargement(true);
     const timer = window.setTimeout(() => {
-      api.get(`/comptable/comptes?search=${encodeURIComponent(search.trim())}&parPage=8`)
+      api.get(`${base}/comptes?search=${encodeURIComponent(search.trim())}&parPage=8`)
         .then(({ data }) => { if (actif) setResultats(data.rows || []); })
         .catch(() => { if (actif) setResultats([]); })
         .finally(() => actif && setChargement(false));
     }, 300);
     return () => { actif = false; window.clearTimeout(timer); };
-  }, [search]);
+  }, [search, base]);
 
   const choisir = (compte) => {
     setSelection(compte);
@@ -50,7 +50,7 @@ export default function PaiementsPage() {
     setForm({ montant: '', moyen: 'ESPECES', reference_transaction: '', date_paiement: '' });
     setErreur('');
     setSituation(null);
-    api.get(`/comptable/comptes/${compte.enrollment_id}/situation`).then(({ data }) => setSituation(data)).catch(() => setSituation(null));
+    api.get(`${base}/comptes/${compte.enrollment_id}/situation`).then(({ data }) => setSituation(data)).catch(() => setSituation(null));
   };
 
   const payer = async (e) => {
@@ -60,7 +60,7 @@ export default function PaiementsPage() {
     try {
       const montant = Number(String(form.montant).replace(',', '.'));
       if (!(montant > 0)) { setErreur('Le montant doit être strictement positif.'); setEnvoi(false); return; }
-      const { data } = await api.post('/comptable/paiements', {
+      const { data } = await api.post(`${base}/paiements`, {
         enrollment_id: selection.enrollment_id,
         montant,
         moyen: form.moyen,
@@ -96,11 +96,11 @@ export default function PaiementsPage() {
     }
     setAnnulationEnCours(true);
     try {
-      await api.post(`/comptable/paiements/${annulerId}/annuler`, { motif: motif.trim() });
+      await api.post(`${base}/paiements/${annulerId}/annuler`, { motif: motif.trim() });
       toast.succes('Paiement annulé et ventilation restituée.');
       setDernierPaiement(null);
       setAnnulerId(null);
-      const { data } = await api.get(`/comptable/comptes/${selection.enrollment_id}/situation`);
+      const { data } = await api.get(`${base}/comptes/${selection.enrollment_id}/situation`);
       setSituation(data);
     } catch (err) {
       setErreur(messageErreur(err, 'Annulation impossible.'));
@@ -189,7 +189,7 @@ export default function PaiementsPage() {
                     Paiement {dernierPaiement.numero_recu} enregistré. Remettez le reçu rempli à la main ; joignez-en le scan ci-dessous (preuve « en cas de quoi »).
                     <div className="flex gap-2 mt-4" style={{ flexWrap: 'wrap' }}>
                       <UploadPreuveRecu
-                        base="/comptable"
+                        base={base}
                         paymentId={dernierPaiement.id}
                         preuve={dernierPaiement.justificatif_chemin ?? null}
                         onChange={(chemin) => setDernierPaiement((p) => (p ? { ...p, justificatif_chemin: chemin } : p))}

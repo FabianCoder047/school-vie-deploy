@@ -9,6 +9,34 @@ import Input from '../../components/Input';
 const URL_API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const ORIGINE = URL_API.replace(/\/api\/?$/, '');
 
+const LIGNES_DELEGATION = [
+  {
+    cle: 'matieres_secretaire_autorisee',
+    titre: 'Création des matières — Secrétaire',
+    desc: 'La Secrétaire peut créer, modifier et supprimer les matières.',
+  },
+  {
+    cle: 'affectations_secretaire_autorisee',
+    titre: 'Affectations matière ↔ classe et professeur — Secrétaire',
+    desc: 'La Secrétaire peut affecter les matières aux classes (coefficients) et les professeurs aux classes/matières.',
+  },
+  {
+    cle: 'annees_secretaire_autorisee',
+    titre: 'Années académiques — Secrétaire',
+    desc: 'La Secrétaire peut créer les années et définir l’année courante. Désactivée : vous seul le pouvez.',
+  },
+  {
+    cle: 'inscriptions_comptable_autorisee',
+    titre: 'Inscriptions — Comptable',
+    desc: 'À activer en votre absence : le Comptable peut inscrire un élève et enregistrer les frais d’inscription.',
+  },
+  {
+    cle: 'paiements_secretaire_autorisee',
+    titre: 'Paiements de scolarité — Secrétaire',
+    desc: 'À activer en votre absence : la Secrétaire peut encaisser et annuler les paiements de scolarité.',
+  },
+];
+
 export default function ParametresPage() {
   const toast = useToast();
   const inputLogoRef = useRef(null);
@@ -20,6 +48,10 @@ export default function ParametresPage() {
   const inputCachetRef = useRef(null);
   const [apercuCachet, setApercuCachet] = useState(null);
   const [envoiCachet, setEnvoiCachet] = useState(false);
+
+  /* Délégations de tâches (chaque bascule est journalisée côté API) */
+  const [delegations, setDelegations] = useState(null);
+  const [envoiDelegations, setEnvoiDelegations] = useState(false);
 
   const charger = () => api.get('/parametres').then(({ data }) => setForm({
     nom: data.nom || '',
@@ -45,6 +77,23 @@ export default function ParametresPage() {
   })).catch((err) => setErreur(messageErreur(err, 'Chargement impossible.')));
 
   useEffect(() => { charger(); }, []);
+  useEffect(() => {
+    api.get('/directeur/delegations').then(({ data }) => setDelegations(data || {})).catch(() => {});
+  }, []);
+
+  const enregistrerDelegations = async () => {
+    setEnvoiDelegations(true);
+    setErreur('');
+    try {
+      const { data } = await api.put('/directeur/delegations', delegations);
+      setDelegations(data);
+      toast.succes('Délégations enregistrées et journalisées.');
+    } catch (err) {
+      setErreur(messageErreur(err, 'Enregistrement des délégations impossible.'));
+    } finally {
+      setEnvoiDelegations(false);
+    }
+  };
 
   const enregistrer = async (e) => {
     e.preventDefault();
@@ -178,6 +227,36 @@ export default function ParametresPage() {
             </div>
             <Button type="submit" variant="primary" className="mt-6" disabled={envoi}>{envoi ? 'Enregistrement…' : 'Enregistrer'}</Button>
           </form>
+        </Card>
+
+        {/* Délégations de tâches — pilotées par le Directeur et journalisées */}
+        <Card titre="Délégations de tâches">
+          <p className="text-doux">
+            Activez une tâche pour la confier à un autre membre du personnel. Chaque activation,
+            désactivation et action réalisée est consignée dans le journal d’activités.
+          </p>
+          {delegations ? (
+            <div className="mt-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--espace-3)' }}>
+              {LIGNES_DELEGATION.map((ligne) => (
+                <label key={ligne.cle} className="flex-between" style={{ gap: 12, cursor: 'pointer', padding: '8px 0', borderBottom: '1px solid var(--bordure)' }}>
+                  <span>
+                    <strong style={{ fontSize: 14 }}>{ligne.titre}</strong>
+                    <span className="text-doux" style={{ display: 'block', fontSize: 12, marginTop: 2 }}>{ligne.desc}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(delegations[ligne.cle])}
+                    onChange={(e) => setDelegations({ ...delegations, [ligne.cle]: e.target.checked })}
+                    style={{ width: 18, height: 18, flexShrink: 0, cursor: 'pointer' }}
+                    aria-label={ligne.titre}
+                  />
+                </label>
+              ))}
+              <Button className="mt-4" onClick={enregistrerDelegations} disabled={envoiDelegations}>
+                {envoiDelegations ? 'Enregistrement…' : 'Enregistrer les délégations'}
+              </Button>
+            </div>
+          ) : <div className="spinner" style={{ margin: '16px auto' }} />}
         </Card>
 
         {/* Horaires de l'emploi du temps */}

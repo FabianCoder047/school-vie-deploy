@@ -20,6 +20,8 @@ router.get('/annees-academiques/courante', controller.anneeCourante);
 router.get('/alias', aff.listerAlias);
 router.get('/alias/classe/:classId', aff.listerAliasDeClasse);
 router.get('/parametres', settings.lireParametres);
+// Délégations de tâches : lecture par tout rôle connecté ( menus / écrans ).
+router.get('/delegations', settings.lireDelegations);
 // Lecture des périodes (fenêtres de saisie visibles par les professeurs)
 router.get('/periodes', pedagogie.listerPeriodes);
 // Horaires de l'emploi du temps (pause, 55 min, retour 14h30, fin primaire…)

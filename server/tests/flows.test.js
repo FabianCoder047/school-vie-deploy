@@ -345,3 +345,111 @@ test('Secrétaire : validation du nom et refus du doublon', async () => {
   assert.equal(doublon.status, 409);
   assert.equal(doublon.body.code, 'ALIAS_DOUBLON');
 });
+
+/* ===== DÉLÉGATIONS DE TÂCHES (journalisées) ===== */
+
+test('délégations : valeurs par défaut et lecture par tous les rôles', async () => {
+  const res = await agent.get('/api/delegations').set('Authorization', `Bearer ${state.secretaireToken}`);
+  assert.equal(res.status, 200);
+  assert.equal(res.body.matieres_secretaire_autorisee, true);
+  assert.equal(res.body.affectations_secretaire_autorisee, true);
+  assert.equal(res.body.annees_secretaire_autorisee, false);
+  assert.equal(res.body.inscriptions_comptable_autorisee, false);
+  assert.equal(res.body.paiements_secretaire_autorisee, false);
+});
+
+test('Secrétaire : créer une matière + affectations (délégation par défaut), action journalisée', async () => {
+  const [[sec]] = await query("SELECT id FROM users WHERE email = 'secretaire@test.local'");
+  const mat = await agent.post('/api/secretaire/subjects')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ nom: 'Français délégué', code: 'FRD' });
+  assert.equal(mat.status, 201, JSON.stringify(mat.body));
+
+  const aff = await agent.post('/api/secretaire/affectations')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ subject_id: mat.body.id, affectations: [{ class_id: 1, coefficient: 3 }] });
+  assert.equal(aff.status, 200, JSON.stringify(aff.body));
+
+  const prof = await agent.post('/api/secretaire/affectations-professeur')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ teacher_id: state.profId, affectations: [{ class_subject_id: aff.body.affectations[0].id, class_alias_id: state.aliasId }] });
+  assert.equal(prof.status, 201, JSON.stringify(prof.body));
+
+  const [logs] = await query("SELECT action, entity FROM audit_logs WHERE user_id = ? AND entity = 'subjects' AND action = 'CREATE'", [sec.id]);
+  assert.ok(logs.length >= 1, 'la création de matière doit être journalisée');
+});
+
+test('Directeur : il crée une année, délègue aux autres tâches, et tout est journalisé', async () => {
+  const annee = await agent.post('/api/directeur/annees-academiques')
+    .set('Authorization', `Bearer ${state.directeurToken}`)
+    .send({ libelle: '2031-2032', date_debut: '2031-09-01', date_fin: '2032-06-30' });
+  assert.equal(annee.status, 201, JSON.stringify(annee.body));
+
+  const [[dir]] = await query("SELECT id FROM users WHERE email = 'directeur@test.local'");
+  const refus = await agent.post('/api/secretaire/annees-academiques')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ libelle: '2032-2033', date_debut: '2032-09-01', date_fin: '2033-06-30' });
+  assert.equal(refus.status, 403);
+  assert.equal(refus.body.code, 'DELEGATION_REQUIRED');
+
+  const delegation = await agent.put('/api/directeur/delegations')
+    .set('Authorization', `Bearer ${state.directeurToken}`)
+    .send({
+      annees_secretaire_autorisee: true,
+      inscriptions_comptable_autorisee: true,
+      paiements_secretaire_autorisee: true,
+    });
+  assert.equal(delegation.status, 200, JSON.stringify(delegation.body));
+  assert.equal(delegation.body.inscriptions_comptable_autorisee, true);
+  assert.equal(delegation.body.paiements_secretaire_autorisee, true);
+
+  const [logs] = await query("SELECT action, old_values, new_values FROM audit_logs WHERE user_id = ? AND action = 'UPDATE_DELEGATIONS'", [dir.id]);
+  assert.equal(logs.length, 1);
+  const nouvellesValeurs = typeof logs[0].new_values === 'string' ? JSON.parse(logs[0].new_values) : logs[0].new_values;
+  assert.equal(nouvellesValeurs.inscriptions_comptable_autorisee, true);
+
+  const journal = await agent.get('/api/directeur/journal?parPage=5')
+    .set('Authorization', `Bearer ${state.directeurToken}`);
+  assert.equal(journal.status, 200);
+  assert.ok(journal.body.rows.some((l) => l.action === 'UPDATE_DELEGATIONS'));
+});
+
+test('Comptable : inscriptions déléguées ; Secrétaire : paiements délégués', async () => {
+  const inscription = await agent.post('/api/comptable/inscriptions/eleves')
+    .set('Authorization', `Bearer ${state.comptableToken}`)
+    .send({
+      eleve: { nom: 'Delegue', prenom: 'Comptable', sexe: 'M', date_naissance: '2018-05-02', lieu_naissance: 'Lomé', adresse: 'Quartier Bè' },
+      tuteur: { nom: 'Delegue', prenom: 'Tuteur', telephone_whatsapp: '99000099' },
+      academique: { class_id: 1, class_alias_id: state.aliasId, modalite_paiement: 'MENSUEL' },
+    });
+  assert.equal(inscription.status, 201, JSON.stringify(inscription.body));
+
+  const paiement = await agent.post('/api/secretaire/comptabilite/paiements')
+    .set('Authorization', `Bearer ${state.secretaireToken}`)
+    .send({ enrollment_id: state.enrollmentId, montant: 5000, moyen: 'ESPECES' });
+  assert.equal(paiement.status, 201, JSON.stringify(paiement.body));
+
+  const [[sec]] = await query("SELECT id FROM users WHERE email = 'secretaire@test.local'");
+  const [[comp]] = await query("SELECT id FROM users WHERE email = 'comptable@test.local'");
+  const [logsSec] = await query('SELECT action, entity FROM audit_logs WHERE user_id = ? AND entity = ?', [sec.id, 'payments']);
+  const [logsComp] = await query('SELECT action, entity FROM audit_logs WHERE user_id = ? AND entity = ?', [comp.id, 'enrollments']);
+  assert.ok(logsSec.length >= 1, 'le paiement délégué doit être journalisé');
+  assert.ok(logsComp.length >= 1, 'l’inscription déléguée doit être journalisée');
+});
+
+test('Directeur : révoquer une délégation → accès immédiatement refusé', async () => {
+  const res = await agent.put('/api/directeur/delegations')
+    .set('Authorization', `Bearer ${state.directeurToken}`)
+    .send({ inscriptions_comptable_autorisee: false });
+  assert.equal(res.status, 200);
+
+  const refus = await agent.post('/api/comptable/inscriptions/eleves')
+    .set('Authorization', `Bearer ${state.comptableToken}`)
+    .send({
+      eleve: { nom: 'Refus', prenom: 'Comptable', date_naissance: '2018-05-02', lieu_naissance: 'Lomé', adresse: 'Bè' },
+      tuteur: { nom: 'Refus', prenom: 'Tuteur', telephone_whatsapp: '99000098' },
+      academique: { class_id: 1, class_alias_id: state.aliasId, modalite_paiement: 'MENSUEL' },
+    });
+  assert.equal(refus.status, 403);
+  assert.equal(refus.body.code, 'DELEGATION_REQUIRED');
+});
