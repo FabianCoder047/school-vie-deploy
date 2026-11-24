@@ -207,6 +207,7 @@ s'endorment après inactivité (premier accès lent) et **les uploads sont perdu
 | Page blanche / routes 404 au rafraîchissement | `_redirects` absent du build | Vérifier que `client/public/_redirects` est bien copié dans `dist` |
 | « Installer l'appli » absent | HTTPS manquant ou PWA non installable | Ouvrir en HTTPS ; contrôler le manifest dans DevTools |
 | Photos/reçus perdus après redéploiement | `UPLOADS_DIR` pas sur le disque | Vérifier `UPLOADS_DIR=/data/uploads` et le disque monté sur `/data` |
+| `Connection timeout` lors de l'envoi de mail (log `Échec de l'envoi du mail d'identifiants`) | **Render gratuit bloque les ports SMTP 25/465/587** (changelog Render du 16/09/2025) | Soit passer l'API en plan payant (Gmail SMTP fonctionne alors), soit utiliser l'API HTTPS Resend : `MAIL_PROVIDER=resend` + `RESEND_API_KEY` + `MAIL_FROM` avec un domaine vérifié (ou `onboarding@resend.dev` en test) |
 | CORS bloqué | `CLIENT_URL` erroné | Renseigner l'URL exacte du front (HTTPS, sans slash final) |
 
 ---

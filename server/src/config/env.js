@@ -43,6 +43,10 @@ module.exports = {
   },
 
   smtp: {
+    // 'smtp' (Gmail, etc.) ou 'resend' (API HTTPS — indispensable sur les
+    // plans gratuits Render qui bloquent les ports SMTP 25/465/587).
+    provider: String(process.env.MAIL_PROVIDER || 'smtp').toLowerCase(),
+    resendApiKey: process.env.RESEND_API_KEY || '',
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: Number(process.env.SMTP_PORT || 587),
     secure: String(process.env.SMTP_SECURE) === 'true',
