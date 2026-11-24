@@ -63,27 +63,32 @@ services:
       - key: LOGIN_LOCK_MINUTES
         value: "30"
       # --- E-mails ---
-      # Le plan gratuit Render BLOQUE les ports SMTP 25/465/587.
-      # Passer MAIL_PROVIDER à "resend" et renseigner RESEND_API_KEY pour
-      # envoyer via HTTPS (ou passer l'API en plan payant pour garder Gmail).
+      # Le plan gratuit Render BLOQUE les ports SMTP 25/465/587 : on utilise
+      # l'API HTTPS Resend. La clé est à fournir au déploiement (sync: false).
       - key: MAIL_PROVIDER
-        value: smtp
+        value: resend
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_DRY_RUN
         value: "false"
+      # onboarding@resend.dev = test, UNIQUEMENT vers l'adresse du compte Resend.
+      # Pour les vrais parents : vérifier un domaine dans Resend puis mettre
+      # MAIL_FROM = no-reply@votre-domaine.verifie.
+      - key: MAIL_FROM
+        value: onboarding@resend.dev
+      - key: MAIL_FROM_NAME
+        value: School Vie
+      # SMTP conservé en secours si l'API passe en plan payant Render.
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
-        value: "587"
+        value: "465"
       - key: SMTP_SECURE
-        value: "false"
+        value: "true"
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
         sync: false
-      - key: MAIL_FROM
-        value: School Vie <no-reply@school-vie.local>
       - key: RESET_PASSWORD_URL
         value: https://school-vie-app.onrender.com/reinitialiser-mot-de-passe
       - key: RESET_TOKEN_EXPIRES_MINUTES

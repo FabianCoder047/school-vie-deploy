@@ -21,6 +21,12 @@
 | Base Aiven MySQL | `schoolvie-db004774-fabiodab83-dd5f.g.aivencloud.com:18922`, base `defaultdb` |
 | Dépôt source déployé | https://github.com/FabianCoder047/school-vie-deploy (**miroir public** — le dépôt original `school-vie-project` reste privé) |
 | Compte Admin initial | `admin@school-vie.local` (mot de passe temporaire communiqué hors dépôt, changement obligatoire à la 1re connexion) |
+| Envoi de mails | **Resend** (`MAIL_PROVIDER=resend`), clé `RESEND_API_KEY` configurée dans Render. Test validé le 24/11/2026 via `onboarding@resend.dev` → compte Resend. |
+
+⚠️ `onboarding@resend.dev` ne peut envoyer **qu'à l'adresse du compte Resend**
+(`paulingoudo@gmail.com`). Pour envoyer aux parents, **vérifiez un domaine dans
+Resend** (Domaines → Add Domain → DNS) puis remplacez `MAIL_FROM` par
+`no-reply@votre-domaine.vérifié` dans les variables Render `school-vie-api`.
 
 **Limites du plan gratuit Render** : l'API se met en veille après inactivité
 (premier accès ~10–50 s) et les fichiers uploadés (photos, logo, reçus) ne
@@ -207,7 +213,8 @@ s'endorment après inactivité (premier accès lent) et **les uploads sont perdu
 | Page blanche / routes 404 au rafraîchissement | `_redirects` absent du build | Vérifier que `client/public/_redirects` est bien copié dans `dist` |
 | « Installer l'appli » absent | HTTPS manquant ou PWA non installable | Ouvrir en HTTPS ; contrôler le manifest dans DevTools |
 | Photos/reçus perdus après redéploiement | `UPLOADS_DIR` pas sur le disque | Vérifier `UPLOADS_DIR=/data/uploads` et le disque monté sur `/data` |
-| `Connection timeout` lors de l'envoi de mail (log `Échec de l'envoi du mail d'identifiants`) | **Render gratuit bloque les ports SMTP 25/465/587** (changelog Render du 16/09/2025) | Soit passer l'API en plan payant (Gmail SMTP fonctionne alors), soit utiliser l'API HTTPS Resend : `MAIL_PROVIDER=resend` + `RESEND_API_KEY` + `MAIL_FROM` avec un domaine vérifié (ou `onboarding@resend.dev` en test) |
+| `Connection timeout` lors de l'envoi de mail (log `Échec de l'envoi du mail d'identifiants`) | **Render gratuit bloque les ports SMTP 25/465/587** (changelog Render du 16/09/2025) | ✅ Résolu ici via `MAIL_PROVIDER=resend` + `RESEND_API_KEY` (API HTTPS). Pour les vrais destinataires, vérifier un domaine Resend et adapter `MAIL_FROM`. Alternative : passer l'API en plan payant pour réutiliser Gmail SMTP. |
+| Resend répond `403 You can only send testing emails to your own email address` | `MAIL_FROM=onboarding@resend.dev` avec un destinataire externe | Vérifier un domaine dans Resend et utiliser `no-reply@votre-domaine` comme `MAIL_FROM` |
 | CORS bloqué | `CLIENT_URL` erroné | Renseigner l'URL exacte du front (HTTPS, sans slash final) |
 
 ---
