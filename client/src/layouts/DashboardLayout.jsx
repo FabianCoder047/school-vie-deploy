@@ -213,7 +213,6 @@ export default function DashboardLayout() {
               <div style={{ fontWeight: 700, fontSize: 13 }}>{user?.prenom} {user?.nom}</div>
               <div style={{ fontSize: 11, color: 'var(--gris-500)' }}>{user?.email || user?.telephone}</div>
             </div>
-            <PwaInstallBanner dansDashboard />
             <button type="button" className="btn btn-secondary btn-sm" onClick={handleDeconnexion}>
               <IconLogout />
               <span>Déconnexion</span>
@@ -268,6 +267,7 @@ export default function DashboardLayout() {
         </header>
 
         <main className="contenu">
+          <PwaInstallBanner />
           <Outlet />
         </main>
       </div>
