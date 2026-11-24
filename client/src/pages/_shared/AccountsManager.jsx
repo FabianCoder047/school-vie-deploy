@@ -13,6 +13,7 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
+import CodeCopiable from '../../components/CodeCopiable';
 
 /**
  * @param {{ endpoint: string, rolesDisponibles: Array<{value:string,label:string}>, titre: string, permissions: 'admin' | 'directeur' }} props
@@ -173,7 +174,8 @@ export default function AccountsManager({ endpoint, rolesDisponibles, titre, sou
           <div className="card" style={{ background: 'var(--gris-50)' }}>
             <p><strong>Titulaire :</strong> {identifiantsAffiches.nom}</p>
             <p className="mt-4"><strong>Identifiant :</strong> {identifiantsAffiches.email || identifiantsAffiches.telephone}</p>
-            <p className="mt-4"><strong>Mot de passe temporaire :</strong> <code style={{ background: '#fff', padding: '2px 8px', borderRadius: 6, border: '1px solid var(--bordure)' }}>{identifiantsAffiches.motDePasse}</code></p>
+            <p className="mt-4"><strong>Mot de passe temporaire :</strong></p>
+            <div className="mt-4"><CodeCopiable valeur={identifiantsAffiches.motDePasse} /></div>
           </div>
         </Modal>
       )}

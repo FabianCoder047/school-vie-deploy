@@ -258,7 +258,10 @@ export default function ParametresPage() {
             </div>
           ) : <div className="spinner" style={{ margin: '16px auto' }} />}
         </Card>
+        </div>
 
+        {/* Colonne droite : horaires (à droite des délégations), puis logo et cachet */}
+        <div className="flex" style={{ flexDirection: 'column', gap: 'var(--espace-5)' }}>
         {/* Horaires de l'emploi du temps */}
         <Card titre="Horaires de l’emploi du temps">
           <p className="text-doux">Utilisés pour créer et valider les créneaux : un cours d’une heure dure {form.duree_heure_minutes} minutes, avec une pause le matin et un retour l’après-midi.</p>
@@ -280,10 +283,7 @@ export default function ParametresPage() {
           </div>
           <Button type="submit" form="form-parametres" variant="secondary" className="mt-4" disabled={envoi}>{envoi ? 'Enregistrement…' : 'Enregistrer les horaires'}</Button>
         </Card>
-        </div>
 
-        {/* Colonne droite : logo puis cachet dessous (design propre) */}
-        <div className="flex" style={{ flexDirection: 'column', gap: 'var(--espace-5)' }}>
         {/* Logo */}
         <Card titre="Logo de l’école">
           <p className="text-doux">Utilisé sur la sidebar, les pages d’authentification, les cartes scolaires et les bulletins. PNG, JPEG ou WebP — 2 Mo maximum.</p>

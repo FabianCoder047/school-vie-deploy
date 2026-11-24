@@ -12,6 +12,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import UploadPreuveRecu from '../../components/UploadPreuveRecu';
+import CodeCopiable from '../../components/CodeCopiable';
 
 const ETAPES = ['Élève', 'Scolarité', 'Tuteur', 'Récapitulatif'];
 const MOYEN_LIB = { ESPECES: 'Espèces', FLOOZ: 'Flooz', MIXX_BY_YAS: 'Mixx By Yas' };
@@ -193,7 +194,9 @@ export default function NouvelElevePage({ base = '/secretaire' }) {
                 {p.motDePasseTemporaire ? (
                   <>
                     <p className="mt-4" style={{ fontSize: 13 }}>Aucun e-mail disponible : transmettez ces identifiants au tuteur (affichés une seule fois) :</p>
-                    <p className="mt-4"><strong>Identifiant :</strong> {p.telephone}<br /><strong>Mot de passe :</strong> <code style={{ background: '#fff', padding: '2px 8px', borderRadius: 6, border: '1px solid var(--bleu-200)' }}>{p.motDePasseTemporaire}</code></p>
+                    <p className="mt-4"><strong>Identifiant :</strong> {p.telephone}</p>
+                    <p className="mt-4"><strong>Mot de passe :</strong></p>
+                    <div className="mt-4"><CodeCopiable valeur={p.motDePasseTemporaire} /></div>
                     <a className="btn btn-success mt-4" href={p.waLink} target="_blank" rel="noopener noreferrer">
                       Envoyer par WhatsApp
                     </a>

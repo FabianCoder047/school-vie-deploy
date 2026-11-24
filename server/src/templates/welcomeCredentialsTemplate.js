@@ -12,8 +12,11 @@ function welcomeCredentialsTemplate({ prenom, nom, identifier, password, loginUr
     </p>
     <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:#666666;">Identifiant</p>
     <p style="margin:0 0 20px;font-size:17px;font-weight:bold;">${escapeHtml(identifier)}</p>
-    <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:#666666;">Mot de passe par défaut</p>
-    <p style="margin:0 0 24px;font-size:30px;font-weight:bold;letter-spacing:3px;font-family:'Courier New',Courier,monospace;">${escapeHtml(password)}</p>
+    <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:#666666;">Mot de passe provisoire</p>
+    <div style="margin:0 0 8px;display:inline-block;padding:12px 18px;background:#f4f6fa;border:1px solid #d7deea;border-radius:8px;user-select:all;-webkit-user-select:all;cursor:copy;">
+      <span style="font-size:26px;font-weight:bold;letter-spacing:2px;font-family:'Courier New',Courier,monospace;word-break:break-all;">${escapeHtml(password)}</span>
+    </div>
+    <p style="margin:0 0 24px;font-size:12px;color:#666666;">Cliquez une fois sur le code pour le sélectionner entièrement, puis copiez-le (Ctrl+C / ⌘C).</p>
     <p style="margin:0 0 20px;">
       Pour des raisons de sécurité, vous devrez <strong>changer ce mot de passe lors de votre première connexion</strong>.
     </p>
