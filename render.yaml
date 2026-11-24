@@ -62,32 +62,32 @@ services:
         value: "5"
       - key: LOGIN_LOCK_MINUTES
         value: "30"
-      # --- E-mails ---
-      # Le plan gratuit Render BLOQUE les ports SMTP 25/465/587 : on utilise
-      # l'API HTTPS Resend. La clé est à fournir au déploiement (sync: false).
+      # --- E-mails (Brevo SMTP) ---
+      # Le plan gratuit Render BLOQUE les ports 25/465/587 : on utilise le port
+      # 2525 de Brevo. Le login SMTP est fourni par Brevo (≠ adresse du compte).
       - key: MAIL_PROVIDER
-        value: resend
-      - key: RESEND_API_KEY
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_SECURE
+        value: "false"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSORD
         sync: false
       - key: MAIL_DRY_RUN
         value: "false"
-      # onboarding@resend.dev = test, UNIQUEMENT vers l'adresse du compte Resend.
-      # Pour les vrais parents : vérifier un domaine dans Resend puis mettre
-      # MAIL_FROM = no-reply@votre-domaine.verifie.
       - key: MAIL_FROM
-        value: onboarding@resend.dev
+        sync: false
       - key: MAIL_FROM_NAME
         value: School Vie
-      # SMTP conservé en secours si l'API passe en plan payant Render.
-      - key: SMTP_HOST
+      # Solutions de secours (API HTTPS, non bloquées) : définir la clé et
+      # passer MAIL_PROVIDER à "resend" ou "brevo" si besoin.
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_PORT
-        value: "465"
-      - key: SMTP_SECURE
-        value: "true"
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
+      - key: BREVO_API_KEY
         sync: false
       - key: RESET_PASSWORD_URL
         value: https://school-vie-app.onrender.com/reinitialiser-mot-de-passe

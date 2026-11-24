@@ -21,12 +21,16 @@
 | Base Aiven MySQL | `schoolvie-db004774-fabiodab83-dd5f.g.aivencloud.com:18922`, base `defaultdb` |
 | Dépôt source déployé | https://github.com/FabianCoder047/school-vie-deploy (**miroir public** — le dépôt original `school-vie-project` reste privé) |
 | Compte Admin initial | `admin@school-vie.local` (mot de passe temporaire communiqué hors dépôt, changement obligatoire à la 1re connexion) |
-| Envoi de mails | **Resend** (`MAIL_PROVIDER=resend`), clé `RESEND_API_KEY` configurée dans Render. Test validé le 24/11/2026 via `onboarding@resend.dev` → compte Resend. |
+| Envoi de mails | **Brevo SMTP** sur le port **2525** (`MAIL_PROVIDER=smtp`, `smtp-relay.brevo.com`, login `…@smtp-brevo.com`, clé `xsmtpsib-…`, expéditeur `paulingoudo@gmail.com`). Test validé le 24/11/2026 via un « mot de passe oublié ». |
 
-⚠️ `onboarding@resend.dev` ne peut envoyer **qu'à l'adresse du compte Resend**
-(`paulingoudo@gmail.com`). Pour envoyer aux parents, **vérifiez un domaine dans
-Resend** (Domaines → Add Domain → DNS) puis remplacez `MAIL_FROM` par
-`no-reply@votre-domaine.vérifié` dans les variables Render `school-vie-api`.
+⚠️ Brevo bloque par défaut les IP inconnues (`525 5.7.1 Unauthorized IP address`).
+La blocage a été désactivé dans **Settings → Security → Authorized IPs**. Si les
+mails échouent à nouveau avec ce message, autoriser les plages Render
+`74.220.51.0/24` et `74.220.59.0/24` (IP partagées, susceptibles de changer).
+
+Un expéditeur `gmail.com` non authentifié peut être réécrit en `@brevosend.com`
+selon les règles Gmail/Yahoo : pour une livraison optimale, vérifiez un vrai
+domaine dans Brevo puis remplacez `MAIL_FROM` par `no-reply@votre-domaine`.
 
 **Limites du plan gratuit Render** : l'API se met en veille après inactivité
 (premier accès ~10–50 s) et les fichiers uploadés (photos, logo, reçus) ne
@@ -213,8 +217,9 @@ s'endorment après inactivité (premier accès lent) et **les uploads sont perdu
 | Page blanche / routes 404 au rafraîchissement | `_redirects` absent du build | Vérifier que `client/public/_redirects` est bien copié dans `dist` |
 | « Installer l'appli » absent | HTTPS manquant ou PWA non installable | Ouvrir en HTTPS ; contrôler le manifest dans DevTools |
 | Photos/reçus perdus après redéploiement | `UPLOADS_DIR` pas sur le disque | Vérifier `UPLOADS_DIR=/data/uploads` et le disque monté sur `/data` |
-| `Connection timeout` lors de l'envoi de mail (log `Échec de l'envoi du mail d'identifiants`) | **Render gratuit bloque les ports SMTP 25/465/587** (changelog Render du 16/09/2025) | ✅ Résolu ici via `MAIL_PROVIDER=resend` + `RESEND_API_KEY` (API HTTPS). Pour les vrais destinataires, vérifier un domaine Resend et adapter `MAIL_FROM`. Alternative : passer l'API en plan payant pour réutiliser Gmail SMTP. |
-| Resend répond `403 You can only send testing emails to your own email address` | `MAIL_FROM=onboarding@resend.dev` avec un destinataire externe | Vérifier un domaine dans Resend et utiliser `no-reply@votre-domaine` comme `MAIL_FROM` |
+| `Connection timeout` lors de l'envoi de mail (log `Échec de l'envoi du mail d'identifiants`) | **Render gratuit bloque les ports SMTP 25/465/587** (changelog Render du 16/09/2025) | ✅ Résolu ici avec Brevo sur le port **2525** (non bloqué). Alternatives : `MAIL_PROVIDER=resend`/`brevo` (API HTTPS) ou plan Render payant. |
+| Brevo `525 5.7.1 Unauthorized IP address` | Blocage des IP inconnues activé dans Brevo | Désactiver le blocage dans Settings → Security → Authorized IPs, ou autoriser `74.220.51.0/24` et `74.220.59.0/24` |
+| Brevo `535 5.7.8 Authentication failed` | Mauvais login SMTP | Utiliser le login affiché par Brevo (ex. `c4db6c001@smtp-brevo.com`), PAS l'adresse du compte, avec la clé `xsmtpsib-…` |
 | CORS bloqué | `CLIENT_URL` erroné | Renseigner l'URL exacte du front (HTTPS, sans slash final) |
 
 ---
