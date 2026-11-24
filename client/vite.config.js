@@ -6,8 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // Mise à jour automatique du service worker à chaque déploiement.
-      registerType: 'autoUpdate',
+      // Mise à jour PROMPT : on propose la nouvelle version depuis la bannière
+      // (pas de mise à jour forcée, pas de désinstallation nécessaire).
+      registerType: 'prompt',
       // Enregistrement explicite dans main.jsx (permet de piloter l'update).
       injectRegister: false,
       includeAssets: ['favicon.svg', 'pwa/favicon-32.png', 'pwa/apple-touch-icon.png'],

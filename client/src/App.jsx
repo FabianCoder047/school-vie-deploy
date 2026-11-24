@@ -61,6 +61,7 @@ import Finance from './pages/parent/Finance';
 import DashboardParent from './pages/parent/DashboardParent';
 import MaintenanceAdmin from './pages/admin/Maintenance';
 import { urlUpload } from './utils/uploads';
+import PwaUpdateBanner from './components/PwaUpdateBanner';
 
 export default function App() {
   const { user, chargement } = useAuth();
@@ -93,7 +94,10 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <>
+      {/* Bannière de mise à jour PWA (une seule instance pour tout le site). */}
+      <PwaUpdateBanner />
+      <Routes>
       {/* Pages publiques */}
       <Route path="/connexion" element={<LoginPage />} />
       <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
@@ -180,6 +184,7 @@ export default function App() {
         <Route path="en-construction" element={<EnConstructionPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }

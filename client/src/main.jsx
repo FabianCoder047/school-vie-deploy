@@ -13,8 +13,14 @@ import './styles/components.css';
 import './styles/maintenance.css';
 
 // PWA : service worker enregistré dès le chargement (HTTPS requis sauf en
-// local). Les mises à jour sont appliquées automatiquement au prochain lancement.
-registerSW({ immediate: true });
+// local). Avec registerType 'prompt', on prévient l'application qu'une mise à
+// jour est prête ; la bannière PwaUpdateBanner propose alors de l'appliquer.
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    window.dispatchEvent(new CustomEvent('school-vie:pwa-update', { detail: { updateSW } }));
+  },
+});
 
 // Certains navigateurs émettent beforeinstallprompt AVANT le montage de React :
 // on le capture ici, au tout début, pour que le bouton puisse toujours ouvrir
@@ -22,15 +28,6 @@ registerSW({ immediate: true });
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   window.__schoolVieInstallPrompt = e;
-});
-
-// Quand une nouvelle version est installée par le service worker, on recharge
-// une seule fois pour afficher immédiatement la mise à jour (PWA sur mobile).
-let dejaRecharge = false;
-navigator.serviceWorker?.addEventListener('controllerchange', () => {
-  if (dejaRecharge) return;
-  dejaRecharge = true;
-  window.location.reload();
 });
 
 ReactDOM.createRoot(document.getElementById('root')).render(

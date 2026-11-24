@@ -746,6 +746,11 @@
 .pwa-banner-corps { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .pwa-banner-corps strong { font-size: 14px; color: var(--gris-900); }
 .pwa-banner-corps span { font-size: 12px; line-height: 1.35; color: var(--texte-doux); }
+.pwa-banner--update {
+  background: linear-gradient(120deg, var(--jaune-50), var(--fond-carte));
+  border-color: var(--jaune-200);
+}
+.pwa-banner--update .pwa-banner-logo { background: var(--jaune-100); }
 .pwa-banner-action { flex-shrink: 0; }
 .pwa-banner-fermer {
   flex-shrink: 0;
