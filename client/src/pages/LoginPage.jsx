@@ -9,7 +9,7 @@ import PasswordInput from '../components/PasswordInput';
 import AuthVisual from '../components/AuthVisual';
 import { LoginIcon } from '../components/icons';
 import SchoolLogo from '../components/SchoolLogo';
-import InstallPwaButton from '../components/InstallPwaButton';
+import PwaInstallBanner from '../components/PwaInstallBanner';
 
 export default function LoginPage() {
   const { user, chargement, connexion, tableauDeBord } = useAuth();
@@ -87,13 +87,11 @@ export default function LoginPage() {
               <Link to="/mot-de-passe-oublie" className="auth-lien">Mot de passe oublié ?</Link>
             </div>
           </form>
-
-          {/* Installation PWA : proposée dès l'arrivée sur le site, avant même la connexion. */}
-          <div style={{ marginTop: 'var(--espace-4)', textAlign: 'center' }}>
-            <InstallPwaButton />
-          </div>
         </main>
       </div>
+
+      {/* Bannière d'installation PWA dès l'arrivée sur le site. */}
+      <PwaInstallBanner />
     </div>
   );
 }

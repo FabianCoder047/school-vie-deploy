@@ -713,3 +713,67 @@
   .topbar .btn-secondary.btn-sm span { display: none; }
   .topbar { gap: var(--espace-2); }
 }
+
+/* ===== Bannière d'installation PWA ===== */
+.pwa-banner {
+  position: fixed;
+  left: 50%;
+  bottom: var(--espace-4);
+  transform: translateX(-50%);
+  z-index: 80;
+  width: min(560px, calc(100% - var(--espace-5)));
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-3);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-lg);
+  cursor: pointer;
+  animation: pwa-banner-entree 240ms ease-out;
+}
+@keyframes pwa-banner-entree {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.pwa-banner-logo {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: var(--rayon-md);
+  background: var(--bleu-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.pwa-banner-logo img { width: 84%; height: 84%; object-fit: contain; }
+.pwa-banner-corps { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pwa-banner-corps strong { font-size: 14px; color: var(--gris-900); }
+.pwa-banner-corps span { font-size: 12px; line-height: 1.35; color: var(--texte-doux); }
+.pwa-banner-action { flex-shrink: 0; }
+.pwa-banner-fermer {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--gris-400);
+  font-size: 22px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.pwa-banner-fermer:hover { color: var(--gris-700); }
+@media (max-width: 480px) {
+  .pwa-banner {
+    left: var(--espace-3);
+    right: var(--espace-3);
+    bottom: var(--espace-3);
+    width: auto;
+    transform: none;
+    animation: none;
+  }
+  /* Sur mobile, la barre d'onglets du dashboard est fixe en bas. */
+  .pwa-banner--dashboard { bottom: calc(var(--hauteur-barre-basse, 0px) + var(--espace-2)); }
+  .pwa-banner-corps span { font-size: 11px; }
+}

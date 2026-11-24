@@ -10,6 +10,7 @@ import PasswordInput from '../components/PasswordInput';
 import AuthVisual from '../components/AuthVisual';
 import { KeyIcon } from '../components/icons';
 import SchoolLogo from '../components/SchoolLogo';
+import PwaInstallBanner from '../components/PwaInstallBanner';
 
 const REGLES = [
   { id: 'longueur', label: 'Au moins 8 caractères', test: (v) => v.length >= 8 },
@@ -100,6 +101,7 @@ export default function ChangePasswordPage() {
         {/* Visuel animé à DROITE */}
         <AuthVisual />
       </div>
+      <PwaInstallBanner />
     </div>
   );
 }

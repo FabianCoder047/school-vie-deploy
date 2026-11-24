@@ -10,7 +10,7 @@ import { SIDEBAR_MENUS } from './sidebarMenu';
 import { ROLE_ESPACE } from '../routes/roleRoutes';
 import { IconBell, IconLogout, IconMenu, IconMaintenance } from './sidebarIcons';
 import Badge from '../components/Badge';
-import InstallPwaButton from '../components/InstallPwaButton';
+import PwaInstallBanner from '../components/PwaInstallBanner';
 import SchoolLogo from '../components/SchoolLogo';
 
 const TYPE_LIB = { COMMUNIQUE: 'Communiqué', SCOLARITE: 'Scolarité', RELANCE: 'Relance', ABSENCE: 'Absence', RETARD: 'Retard', PRESENCE: 'Présence', SYSTEME: 'Système' };
@@ -213,7 +213,7 @@ export default function DashboardLayout() {
               <div style={{ fontWeight: 700, fontSize: 13 }}>{user?.prenom} {user?.nom}</div>
               <div style={{ fontSize: 11, color: 'var(--gris-500)' }}>{user?.email || user?.telephone}</div>
             </div>
-            <InstallPwaButton />
+            <PwaInstallBanner dansDashboard />
             <button type="button" className="btn btn-secondary btn-sm" onClick={handleDeconnexion}>
               <IconLogout />
               <span>Déconnexion</span>

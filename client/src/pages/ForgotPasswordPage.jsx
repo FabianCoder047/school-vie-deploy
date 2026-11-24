@@ -7,6 +7,7 @@ import Input from '../components/Input';
 import AuthVisual from '../components/AuthVisual';
 import { MailIcon } from '../components/icons';
 import SchoolLogo from '../components/SchoolLogo';
+import PwaInstallBanner from '../components/PwaInstallBanner';
 
 export default function ForgotPasswordPage() {
   const [identifier, setIdentifier] = useState('');
@@ -57,6 +58,7 @@ export default function ForgotPasswordPage() {
           </form>
         </main>
       </div>
+      <PwaInstallBanner />
     </div>
   );
 }

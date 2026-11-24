@@ -7,6 +7,7 @@ import PasswordInput from '../components/PasswordInput';
 import AuthVisual from '../components/AuthVisual';
 import { KeyIcon, LoginIcon } from '../components/icons';
 import SchoolLogo from '../components/SchoolLogo';
+import PwaInstallBanner from '../components/PwaInstallBanner';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -73,6 +74,7 @@ export default function ResetPasswordPage() {
         {/* Visuel animé à DROITE */}
         <AuthVisual />
       </div>
+      <PwaInstallBanner />
     </div>
   );
 }
