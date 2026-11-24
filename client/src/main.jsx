@@ -22,6 +22,13 @@ const updateSW = registerSW({
   },
 });
 
+// Une appli déjà installée ne vérifie pas toujours les mises à jour au
+// lancement : on force une vérification au démarrage puis toutes les minutes.
+navigator.serviceWorker?.ready.then((registration) => {
+  registration.update().catch(() => {});
+  window.setInterval(() => registration.update().catch(() => {}), 60_000);
+}).catch(() => {});
+
 // Certains navigateurs émettent beforeinstallprompt AVANT le montage de React :
 // on le capture ici, au tout début, pour que le bouton puisse toujours ouvrir
 // le dialogue d'installation natif au premier clic.
