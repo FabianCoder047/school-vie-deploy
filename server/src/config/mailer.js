@@ -11,6 +11,11 @@ const transporter = !env.smtp.dryRun && env.smtp.provider !== 'resend'
       host: env.smtp.host,
       port: env.smtp.port,
       secure: env.smtp.secure,
+      // Sans ces timeouts, un port SMTP bloqué (Render gratuit) fait attendre
+      // la requête HTTP plusieurs minutes avant de journaliser l'erreur.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 10_000,
       auth: env.smtp.user ? { user: env.smtp.user, pass: env.smtp.pass } : undefined,
     })
   : null;
