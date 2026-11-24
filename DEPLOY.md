@@ -9,6 +9,32 @@
 | Base de données | **MySQL managé externe** (Aiven / Railway / Clever Cloud) | Render ne propose pas de MySQL managé |
 | Photos, logo, signature, reçus scannés | **Disque persistant Render** `/data` | monté sur `/data/uploads` via `UPLOADS_DIR` |
 
+## 1bis. Déploiement effectif (24 nov 2026)
+
+| Ressource | Valeur |
+|---|---|
+| Frontend (PWA) | https://school-vie-app.onrender.com |
+| API | https://school-vie-api.onrender.com/api |
+| Health check | https://school-vie-api.onrender.com/api/health |
+| Service Render API | `srv-dc2bah6c6qcc73denpa0` (plan **free**, région Francfort) |
+| Service Render front | `srv-dc2bmjek1f9s73a74870` (Static Site, rewrites SPA configurés) |
+| Base Aiven MySQL | `schoolvie-db004774-fabiodab83-dd5f.g.aivencloud.com:18922`, base `defaultdb` |
+| Dépôt source déployé | https://github.com/FabianCoder047/school-vie-deploy (**miroir public** — le dépôt original `school-vie-project` reste privé) |
+| Compte Admin initial | `admin@school-vie.local` (mot de passe temporaire communiqué hors dépôt, changement obligatoire à la 1re connexion) |
+
+**Limites du plan gratuit Render** : l'API se met en veille après inactivité
+(premier accès ~10–50 s) et les fichiers uploadés (photos, logo, reçus) ne
+sont **pas persistants** (ils sont stockés dans `server/uploads` dans le
+conteneur). Pour un usage réel : passer l'API en plan `starter`, ajouter un
+disque persistant monté sur `/data` et rétablir `UPLOADS_DIR=/data/uploads`
+(les lignes correspondantes sont commentées dans `render.yaml`).
+
+**Sécurité après déploiement** : la clé API Render, le mot de passe Aiven et le
+mot de passe d'application Gmail ont été transmis pour le déploiement. Il est
+recommandé de les **faire tourner** (Render → API Keys → Revoke ; Aiven →
+Reset password ; Gmail → nouveau mot de passe d'application) puis de mettre à
+jour les variables dans le service Render `school-vie-api`.
+
 > **Pourquoi pas Vercel ?** Vercel est serverless : le système de fichiers y est
 > éphémère (les photos uploadées disparaîtraient) et l'Express actuel (pool
 > MySQL, multer disque, rate-limit en mémoire) devrait être réécrit. Render est

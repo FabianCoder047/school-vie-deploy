@@ -15,37 +15,34 @@ services:
     region: frankfurt
     branch: main
     rootDir: server
-    # Le disque persistant (uploads) exige un plan payant sur Render.
-    plan: starter
+    # Déploiement actuel : plan gratuit (redémarrage à froid + uploads non persistants).
+    # Pour un usage réel, passer en "starter" et ajouter un disque persistant
+    # monté sur /data avec UPLOADS_DIR=/data/uploads (voir DEPLOY.md).
+    plan: free
     buildCommand: npm ci
     # Les migrations sont idempotentes et jouées à chaque démarrage.
     # Le seed (mot de passe admin) se lance UNE SEULE fois depuis le Shell Render
     # (voir DEPLOY.md) : ne l'ajoutez pas ici, il réinitialiserait l'admin.
     startCommand: node src/database/migrate.js && node src/server.js
     healthCheckPath: /api/health
-    disk:
-      name: school-vie-uploads
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       # PORT est injecté automatiquement par Render (ne pas le fixer ici).
       - key: CLIENT_URL
         value: https://school-vie-app.onrender.com
-      - key: UPLOADS_DIR
-        value: /data/uploads
+      # UPLOADS_DIR : absent sur le plan gratuit (dossier server/uploads).
       # --- Base MySQL managée externe ---
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        value: "3306"
+        value: "18922"
       - key: DB_USER
         sync: false
       - key: DB_PASSWORD
         sync: false
       - key: DB_NAME
-        value: school_vie_db_004774
+        value: defaultdb
       - key: DB_SSL
         value: "true"
       # La base est créée à l'avance chez le fournisseur MySQL : on ignore
@@ -105,6 +102,16 @@ services:
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
+    # Rewrites SPA : sans eux, les URL comme /directeur/matieres renvoient 404.
+    routes:
+      - type: rewrite
+        source: /
+        destination: /index.html
+        priority: 0
+      - type: rewrite
+        source: /*
+        destination: /index.html
+        priority: 1
     envVars:
       # VITE_API_URL est lu au BUILD (Vite) : il doit être renseigné ici,
       # pas seulement dans le dashboard après le build.
