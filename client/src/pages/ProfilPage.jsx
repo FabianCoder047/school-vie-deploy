@@ -37,8 +37,6 @@ export default function ProfilPage() {
 
   const [chargement, setChargement] = useState(true);
   const [form, setForm] = useState({ nom: '', prenom: '', email: '', telephone: '' });
-  // Adresse de l'établissement : affichée à titre informatif, non modifiable ici.
-  const [adresseEcole, setAdresseEcole] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
 
@@ -57,15 +55,12 @@ export default function ProfilPage() {
   const charger = () => {
     setChargement(true);
     api.get('/profile')
-      .then(({ data }) => {
-        setForm({
-          nom: data.user.nom || '',
-          prenom: data.user.prenom || '',
-          email: data.user.email || '',
-          telephone: data.user.telephone || '',
-        });
-        setAdresseEcole(data.ecole?.adresse || '');
-      })
+      .then(({ data }) => setForm({
+        nom: data.user.nom || '',
+        prenom: data.user.prenom || '',
+        email: data.user.email || '',
+        telephone: data.user.telephone || '',
+      }))
       .catch((err) => setErreur(messageErreur(err, 'Chargement impossible.')))
       .finally(() => setChargement(false));
   };
@@ -197,12 +192,11 @@ export default function ProfilPage() {
               <Input label="Prénom" name="prenom" value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} requis />
               <Input label="Nom" name="nom" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} requis />
             </div>
-            <div className="mt-4"><Input label="E-mail" name="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="ex. nom@example.com" /></div>
-            <div className="mt-4"><Input label="Téléphone" name="telephone" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} placeholder="ex. 90 00 00 00" aide="Un e-mail ou un téléphone est requis (identifiant de connexion)." /></div>
             <div className="mt-4">
-              <Input label="Adresse" name="adresse" value={adresseEcole} disabled placeholder="Adresse de l’établissement"
-                aide="Adresse de l’établissement — non modifiable depuis le profil (voir Paramètres de l’école)." />
+              <Input label="Adresse e-mail" name="email" type="email" value={form.email} disabled
+                aide="L’adresse e-mail est votre identifiant de connexion : elle n’est pas modifiable ici." />
             </div>
+            <div className="mt-4"><Input label="Téléphone" name="telephone" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} placeholder="ex. 90 00 00 00" aide="Un e-mail ou un téléphone est requis (identifiant de connexion)." /></div>
             <Button type="submit" className="mt-6" disabled={envoi}>{envoi ? 'Enregistrement…' : 'Enregistrer'}</Button>
           </form>
         </Card>

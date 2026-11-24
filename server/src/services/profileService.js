@@ -18,7 +18,9 @@ async function modifierProfil(userId, data, ip) {
   const [[actuel]] = await pool.query('SELECT id, nom, prenom, email, telephone FROM users WHERE id = ?', [userId]);
   if (!actuel) throw ApiError.notFound('Utilisateur introuvable.');
 
-  const email = data.email?.trim().toLowerCase() || null;
+  // L'adresse e-mail est verrouillée côté Profil : on conserve TOUJOURS celle
+  // en base, quelle que soit la valeur envoyée par le client.
+  const email = actuel.email || null;
   const telephone = data.telephone?.trim() || null;
   const nom = data.nom.trim();
   const prenom = data.prenom.trim();
@@ -30,11 +32,7 @@ async function modifierProfil(userId, data, ip) {
     throw ApiError.badRequest('Un e-mail ou un téléphone est requis (identifiant de connexion).', 'IDENTIFIANT_REQUIS');
   }
 
-  // Unicité e-mail / téléphone hors du compte courant
-  if (email) {
-    const [[existEmail]] = await pool.query('SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1', [email, userId]);
-    if (existEmail) throw ApiError.conflict('Cette adresse e-mail est déjà utilisée par un autre compte.', 'EMAIL_DEJA_UTILISE');
-  }
+  // Unicité du téléphone hors du compte courant (l'e-mail n'est pas modifiable).
   if (telephone) {
     const [[existTel]] = await pool.query('SELECT id FROM users WHERE telephone = ? AND id <> ? LIMIT 1', [telephone, userId]);
     if (existTel) throw ApiError.conflict('Ce numéro de téléphone est déjà utilisé par un autre compte.', 'TELEPHONE_DEJA_UTILISE');
@@ -46,7 +44,12 @@ async function modifierProfil(userId, data, ip) {
   );
   const ecole = await settingsRepo.get();
   const [[user]] = await pool.query(`SELECT ${PUBLIC} FROM users WHERE id = ?`, [userId]);
-  await audit({ userId, action: 'PROFILE_UPDATE', entity: 'users', entityId: userId, oldValues: { nom: actuel.nom, prenom: actuel.prenom, email: actuel.email, telephone: actuel.telephone }, newValues: data, ipAddress: ip });
+  await audit({
+    userId, action: 'PROFILE_UPDATE', entity: 'users', entityId: userId,
+    oldValues: { nom: actuel.nom, prenom: actuel.prenom, email: actuel.email, telephone: actuel.telephone },
+    newValues: { nom, prenom, email, telephone },
+    ipAddress: ip,
+  });
   return { user, ecole: ecole ? { nom: ecole.nom, logo_path: ecole.logo_path, adresse: ecole.adresse } : null };
 }
 
