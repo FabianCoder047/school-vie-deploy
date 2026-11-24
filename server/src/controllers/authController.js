@@ -54,4 +54,10 @@ async function resetPassword(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { login, refresh, logout, me, changePassword, forgotPassword, resetPassword };
+async function copyCode(req, res, next) {
+  try {
+    res.json(await authService.lireCodeCopie(req.query.token));
+  } catch (err) { next(err); }
+}
+
+module.exports = { login, refresh, logout, me, changePassword, forgotPassword, resetPassword, copyCode };

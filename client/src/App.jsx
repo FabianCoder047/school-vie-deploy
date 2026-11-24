@@ -62,6 +62,7 @@ import DashboardParent from './pages/parent/DashboardParent';
 import MaintenanceAdmin from './pages/admin/Maintenance';
 import { urlUpload } from './utils/uploads';
 import PwaUpdateBanner from './components/PwaUpdateBanner';
+import CopyCodePage from './pages/CopyCodePage';
 
 export default function App() {
   const { user, chargement } = useAuth();
@@ -102,6 +103,7 @@ export default function App() {
       <Route path="/connexion" element={<LoginPage />} />
       <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
       <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+      <Route path="/copier-mot-de-passe" element={<CopyCodePage />} />
 
       {/* Changement de mot de passe forcé (accessible sans layout) */}
       <Route

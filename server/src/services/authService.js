@@ -215,18 +215,41 @@ async function resetPassword(token, newPassword, req) {
 
 async function sendWelcomeCredentials({ user, password }) {
   const loginUrl = env.clientUrl;
+  // Lien « Copier » : les mails ne peuvent pas exécuter de JS. Le bouton ouvre
+  // une page de l'application où un vrai bouton copie le code dans le presse-papiers.
+  const jetonCopie = jwt.sign(
+    { purpose: 'COPY_CODE', password },
+    env.jwt.accessSecret,
+    { expiresIn: '24h' }
+  );
+  const copyUrl = `${loginUrl}/copier-mot-de-passe?token=${encodeURIComponent(jetonCopie)}`;
   const html = welcomeCredentialsTemplate({
     prenom: user.prenom,
     nom: user.nom,
     identifier: user.email || user.telephone,
     password,
     loginUrl,
+    copyUrl,
   });
   if (user.email) {
     return sendMail({ to: user.email, subject: 'School Vie — vos identifiants de connexion', html });
   }
   logger.info(`Compte sans e-mail (${user.telephone}) : identifiants non envoyés par mail.`);
   return { delivered: false, dryRun: env.smtp.dryRun, skipped: true };
+}
+
+/** Code à copier, derrière un jeton signé de courte durée (lien du mail). */
+function lireCodeCopie(token) {
+  let charge;
+  try {
+    charge = jwt.verify(token, env.jwt.accessSecret);
+  } catch (_err) {
+    throw ApiError.badRequest('Ce lien de copie est invalide ou expiré.', 'COPY_CODE_INVALID');
+  }
+  if (charge?.purpose !== 'COPY_CODE' || !charge.password) {
+    throw ApiError.badRequest('Ce lien de copie est invalide.', 'COPY_CODE_INVALID');
+  }
+  return { password: charge.password };
 }
 
 module.exports = {
@@ -238,4 +261,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   sendWelcomeCredentials,
+  lireCodeCopie,
 };
