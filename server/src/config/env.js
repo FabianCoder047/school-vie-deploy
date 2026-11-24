@@ -55,10 +55,11 @@ module.exports = {
   },
 
   smtp: {
-    // 'smtp' (Gmail, etc.) ou 'resend' (API HTTPS — indispensable sur les
-    // plans gratuits Render qui bloquent les ports SMTP 25/465/587).
+    // 'smtp' (Gmail/Brevo), 'resend' ou 'brevo' (API HTTPS — indispensable
+    // sur les plans gratuits Render qui bloquent les ports SMTP 25/465/587).
     provider: String(process.env.MAIL_PROVIDER || 'smtp').toLowerCase(),
     resendApiKey: process.env.RESEND_API_KEY || '',
+    brevoApiKey: process.env.BREVO_API_KEY || '',
     host: mailHost,
     port: mailPort,
     secure: mailSecure,

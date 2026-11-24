@@ -20,6 +20,35 @@ const transporter = !env.smtp.dryRun && env.smtp.provider !== 'resend'
     })
   : null;
 
+/** Brevo via API HTTPS (pas de port SMTP → fonctionne sur Render gratuit). */
+async function envoyerAvecBrevo({ to, subject, html }) {
+  if (!env.smtp.brevoApiKey) {
+    throw new Error('BREVO_API_KEY manquante (MAIL_PROVIDER=brevo).');
+  }
+  const correspondance = /^(.*?)\s*<([^>]+)>$/.exec(env.smtp.from);
+  const sender = correspondance
+    ? { name: correspondance[1].trim(), email: correspondance[2].trim() }
+    : { name: env.smtp.from.includes('@') ? 'School Vie' : env.smtp.from, email: env.smtp.from };
+  const destinataires = (Array.isArray(to) ? to : [to]).map((email) => ({ email }));
+  const reponse = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': env.smtp.brevoApiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender,
+      to: destinataires,
+      subject,
+      htmlContent: html,
+    }),
+  });
+  if (!reponse.ok) {
+    const detail = await reponse.text();
+    throw new Error(`Brevo ${reponse.status} : ${detail.slice(0, 300)}`);
+  }
+}
+
 async function envoyerAvecResend({ to, subject, html }) {
   if (!env.smtp.resendApiKey) {
     throw new Error('RESEND_API_KEY manquante (MAIL_PROVIDER=resend).');
@@ -58,6 +87,8 @@ async function sendMail({ to, subject, html }) {
   }
   if (env.smtp.provider === 'resend') {
     await envoyerAvecResend({ to, subject, html });
+  } else if (env.smtp.provider === 'brevo') {
+    await envoyerAvecBrevo({ to, subject, html });
   } else {
     await transporter.sendMail({ from: env.smtp.from, to, subject, html });
   }
