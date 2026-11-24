@@ -11,7 +11,7 @@ import SchoolLogo from './SchoolLogo';
 const CLE_MASQUAGE = 'school-vie:pwa-banner-masquee';
 
 export default function PwaInstallBanner() {
-  const [prompt, setPrompt] = useState(null);
+  const [prompt, setPrompt] = useState(() => window.__schoolVieInstallPrompt || null);
   const [installee, setInstallee] = useState(false);
   const [supporte, setSupporte] = useState(false);
   const [masquee, setMasquee] = useState(() => {
@@ -45,9 +45,11 @@ export default function PwaInstallBanner() {
   if (installee || masquee || !supporte) return null;
 
   const installer = async () => {
-    if (!prompt) return;
-    prompt.prompt();
-    await prompt.userChoice; // 'accepted' → installée ; 'dismissed' → on garde la bannière
+    const evenement = prompt || window.__schoolVieInstallPrompt;
+    if (!evenement) return;
+    evenement.prompt();
+    await evenement.userChoice; // 'accepted' → installée ; 'dismissed' → on garde la bannière
+    window.__schoolVieInstallPrompt = null;
     setPrompt(null);
   };
 
@@ -61,15 +63,14 @@ export default function PwaInstallBanner() {
       <div className="pwa-banner-logo"><SchoolLogo alt="Logo School Vie" /></div>
       <div className="pwa-banner-corps">
         <strong>Installer School Vie</strong>
-        <span>Accès rapide depuis l’écran d’accueil, même hors ligne.</span>
+        <span>Accès rapide depuis l’écran d’accueil de votre appareil.</span>
       </div>
       <button type="button" className="btn btn-primary btn-sm pwa-banner-action"
-        onClick={installer} disabled={!prompt}
-        title={prompt ? 'Installer School Vie sur cet appareil' : 'Le navigateur proposera l’installation dans quelques instants'}>
+        onClick={installer} title="Installer School Vie sur cet appareil">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3v12M7 10l5 5 5-5M4 20h16" />
         </svg>
-        {prompt ? 'Installer' : 'Installation…'}
+        Installer
       </button>
       <button type="button" className="pwa-banner-fermer" onClick={fermer} aria-label="Masquer la bannière">×</button>
     </div>

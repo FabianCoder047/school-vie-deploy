@@ -16,6 +16,14 @@ import './styles/maintenance.css';
 // local). Les mises à jour sont appliquées automatiquement au prochain lancement.
 registerSW({ immediate: true });
 
+// Certains navigateurs émettent beforeinstallprompt AVANT le montage de React :
+// on le capture ici, au tout début, pour que le bouton puisse toujours ouvrir
+// le dialogue d'installation natif au premier clic.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.__schoolVieInstallPrompt = e;
+});
+
 // Quand une nouvelle version est installée par le service worker, on recharge
 // une seule fois pour afficher immédiatement la mise à jour (PWA sur mobile).
 let dejaRecharge = false;
