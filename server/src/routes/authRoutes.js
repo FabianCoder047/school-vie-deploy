@@ -22,6 +22,5 @@ router.get('/me', authenticate, authController.me);
 router.post('/change-password', authenticate, validate(changePasswordSchema), authController.changePassword);
 router.post('/forgot-password', sensitiveAuthLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
 router.post('/reset-password', sensitiveAuthLimiter, validate(resetPasswordSchema), authController.resetPassword);
-router.get('/copy-code', sensitiveAuthLimiter, authController.copyCode);
 
 module.exports = router;
