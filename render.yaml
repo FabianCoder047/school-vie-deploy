@@ -1,54 +1,45 @@
 # =====================================================================
-# School Vie — Blueprint Render (backend + frontend statique).
-# La base MySQL est managée à l'extérieur (Aiven / Railway / Clever Cloud) :
-# renseignez DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME dans le dashboard
-# Render au moment de la création (champs `sync: false` ci-dessous).
+# School Vie — Blueprint Render : UN seul service Docker tout-en-un.
+# L'image contient l'API Express, la SPA Vite (PWA) et MySQL 8.
+# Les données sont sur le disque persistant monté sur /data.
 #
-# Déploiement : Render Dashboard → New → Blueprint → ce dépôt → school-app/render.yaml
-# Voir school-app/DEPLOY.md pour la procédure complète.
+# Voir DOCKER.md pour la procédure et le dépannage.
 # =====================================================================
 services:
-  # ---------- Backend Node / Express ----------
   - type: web
     name: school-vie-api
-    runtime: node
+    runtime: docker
     region: frankfurt
     branch: main
-    rootDir: server
-    # Déploiement actuel : plan gratuit (redémarrage à froid + uploads non persistants).
-    # Pour un usage réel, passer en "starter" et ajouter un disque persistant
-    # monté sur /data avec UPLOADS_DIR=/data/uploads (voir DEPLOY.md).
-    plan: free
-    buildCommand: npm ci
-    # Les migrations sont idempotentes et jouées à chaque démarrage.
-    # Le seed (mot de passe admin) se lance UNE SEULE fois depuis le Shell Render
-    # (voir DEPLOY.md) : ne l'ajoutez pas ici, il réinitialiserait l'admin.
-    startCommand: node src/database/migrate.js && node src/server.js
+    # Le disque persistant est nécessaire pour garder MySQL et les uploads.
+    plan: starter
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      # PORT est injecté automatiquement par Render (ne pas le fixer ici).
+      # PORT est injecté automatiquement par Render (l'API le respecte).
       - key: CLIENT_URL
-        value: https://school-vie-app.onrender.com
-      # UPLOADS_DIR : absent sur le plan gratuit (dossier server/uploads).
-      # --- Base MySQL managée externe ---
+        value: https://school-vie-api.onrender.com
+      - key: UPLOADS_DIR
+        value: /data/uploads
+
+      # --- MySQL 8 local dans le conteneur ---
       - key: DB_HOST
-        sync: false
+        value: 127.0.0.1
       - key: DB_PORT
-        value: "18922"
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
+        value: "3306"
       - key: DB_NAME
-        value: defaultdb
+        value: school_vie_db_004774
+      - key: DB_USER
+        value: schoolvie
+      - key: DB_PASSWORD
+        generateValue: true
       - key: DB_SSL
-        value: "true"
-      # La base est créée à l'avance chez le fournisseur MySQL : on ignore
-      # CREATE DATABASE / USE dans la migration 001.
+        value: "false"
       - key: DB_SKIP_CREATE_DATABASE
         value: "true"
+
       # --- Sécurité ---
       - key: JWT_ACCESS_SECRET
         generateValue: true
@@ -62,9 +53,19 @@ services:
         value: "5"
       - key: LOGIN_LOCK_MINUTES
         value: "30"
-      # --- E-mails (Brevo SMTP) ---
-      # Le plan gratuit Render BLOQUE les ports 25/465/587 : on utilise le port
-      # 2525 de Brevo. Le login SMTP est fourni par Brevo (≠ adresse du compte).
+
+      # --- Admin initial : laissé vide -> mot de passe généré et affiché
+      #     dans les logs au premier démarrage (voir DOCKER.md).
+      - key: ADMIN_EMAIL
+        value: admin@school-vie.local
+      - key: ADMIN_NOM
+        value: Administrateur
+      - key: ADMIN_PRENOM
+        value: École
+      - key: SCHOOL_NAME
+        value: School Vie
+
+      # --- E-mails (Brevo SMTP port 2525, non bloqué par Render) ---
       - key: MAIL_PROVIDER
         value: smtp
       - key: MAIL_HOST
@@ -83,49 +84,15 @@ services:
         sync: false
       - key: MAIL_FROM_NAME
         value: School Vie
-      # Solutions de secours (API HTTPS, non bloquées) : définir la clé et
-      # passer MAIL_PROVIDER à "resend" ou "brevo" si besoin.
       - key: RESEND_API_KEY
         sync: false
       - key: BREVO_API_KEY
         sync: false
       - key: RESET_PASSWORD_URL
-        value: https://school-vie-app.onrender.com/reinitialiser-mot-de-passe
+        value: https://school-vie-api.onrender.com/reinitialiser-mot-de-passe
       - key: RESET_TOKEN_EXPIRES_MINUTES
         value: "60"
-      # --- Seed initial (utilisés une seule fois via Render Shell) ---
-      - key: ADMIN_EMAIL
-        sync: false
-      - key: ADMIN_PASSWORD
-        sync: false
-      - key: ADMIN_NOM
-        value: Administrateur
-      - key: ADMIN_PRENOM
-        value: École
-      - key: SCHOOL_NAME
-        value: School Vie
-
-  # ---------- Frontend React (PWA) ----------
-  - type: static
-    name: school-vie-app
-    runtime: static
-    region: frankfurt
-    branch: main
-    rootDir: client
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
-    # Rewrites SPA : sans eux, les URL comme /directeur/matieres renvoient 404.
-    routes:
-      - type: rewrite
-        source: /
-        destination: /index.html
-        priority: 0
-      - type: rewrite
-        source: /*
-        destination: /index.html
-        priority: 1
-    envVars:
-      # VITE_API_URL est lu au BUILD (Vite) : il doit être renseigné ici,
-      # pas seulement dans le dashboard après le build.
-      - key: VITE_API_URL
-        value: https://school-vie-api.onrender.com/api
+    disk:
+      name: school-vie-data
+      mountPath: /data
+      sizeGB: 1

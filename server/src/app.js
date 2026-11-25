@@ -1,6 +1,7 @@
 // Assemblage de l'application Express : sécurité (helmet, CORS, rate-limit),
 // parsing JSON, routes, gestion d'erreurs centralisée.
 const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -77,6 +78,18 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/notifications', authenticate, requirePasswordChanged, notificationsRouter);
 // Documents PDF + communiqués : Directeur uniquement
 app.use('/api/directeur', authenticate, requirePasswordChanged, authorizeRoles('DIRECTEUR'), directeurDocumentsRouter);
+
+// Déploiement "tout-en-un" (Docker) : le même serveur Express sert l'API et
+// la SPA compilée par Vite. Les routes React inconnues renvoient index.html
+// (équivalent du _redirects du Static Site Render).
+if (process.env.FRONTEND_DIST_DIR && fs.existsSync(process.env.FRONTEND_DIST_DIR)) {
+  const dist = process.env.FRONTEND_DIST_DIR;
+  app.use(express.static(dist, { index: false, maxAge: '1h' }));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) return next();
+    res.sendFile(path.join(dist, 'index.html'));
+  });
+}
 
 app.use(notFoundHandler);
 app.use(errorHandler);

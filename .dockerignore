@@ -1,0 +1,15 @@
+**/node_modules
+**/.env
+**/.env.*
+**/dist
+**/uploads
+**/tests
+**/.git
+.git
+.gitignore
+README.md
+DEPLOY.md
+DOCKER.md
+render.yaml
+docker-compose.yml
+*.log

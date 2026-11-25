@@ -1,5 +1,12 @@
 # School Vie — mise en ligne (Render + MySQL managé) & PWA
 
+> **Nouveau (recommandé) : déploiement Docker tout-en-un.** Si l'API Render
+> échoue à démarrer, utilisez l'image Docker qui contient l'API, la SPA et
+> MariaDB : voir **[DOCKER.md](DOCKER.md)** (`docker compose up -d --build`
+> en local, Web Service Docker + disque `/data` sur Render). Le contenu de ce
+> document décrit l'ancien déploiement en deux services Render avec base
+> MySQL managée externe.
+
 ## 1. Architecture retenue
 
 | Composant | Hébergement | Notes |
