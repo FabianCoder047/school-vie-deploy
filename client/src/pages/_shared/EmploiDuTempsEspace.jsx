@@ -81,7 +81,8 @@ export default function EmploiDuTempsEspace({ espace = 'directeur' }) {
   };
   const bornesPeriode = (periode) => {
     if (periode === 'matin1') {
-      return { debutMin: regles.debutJournee, debutMax: regles.pause.debut, finMin: regles.pause.fin, finMax: regles.finPrimaire };
+      // Avant la pause : le créneau doit tenir entièrement dans 07:00 → 09:45.
+      return { debutMin: regles.debutJournee, debutMax: regles.pause.debut, finMin: regles.debutJournee, finMax: regles.pause.debut };
     }
     if (periode === 'matin2') {
       return { debutMin: regles.pause.fin, debutMax: regles.finPrimaire, finMin: regles.pause.fin, finMax: regles.finPrimaire };

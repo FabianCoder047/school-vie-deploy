@@ -41,6 +41,7 @@ SQL
 
 export DB_HOST=127.0.0.1 DB_PORT="$PORT" DB_USER DB_PASSWORD DB_NAME DB_SKIP_CREATE_DATABASE=true
 node src/database/migrate.js
+node scripts/seed-referentiels.js
 
 mysqladmin --socket="$SOCKET" --protocol=socket -uroot shutdown >/dev/null 2>&1 || true
 

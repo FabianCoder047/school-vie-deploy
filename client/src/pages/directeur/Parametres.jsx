@@ -275,7 +275,7 @@ export default function ParametresPage() {
           </div>
           <div className="grid-2 mt-4">
             <Input label="Fin de la matinée" name="fin_matin" type="time" form="form-parametres" value={form.fin_matin} onChange={(e) => setForm({ ...form, fin_matin: e.target.value })} />
-            <Input label="Fin au primaire" name="fin_primaire" type="time" form="form-parametres" value={form.fin_primaire} onChange={(e) => setForm({ ...form, fin_primaire: e.target.value })} aide="Durée libre, pas de créneau l’après-midi" />
+            <Input label="Fin au primaire" name="fin_primaire" type="time" form="form-parametres" value={form.fin_primaire} onChange={(e) => setForm({ ...form, fin_primaire: e.target.value })} aide="Durée libre au primaire, cours possibles aussi l’après-midi" />
           </div>
           <div className="grid-2 mt-4">
             <Input label="Retour des collégiens / lycéens" name="debut_apres_midi" type="time" form="form-parametres" value={form.debut_apres_midi} onChange={(e) => setForm({ ...form, debut_apres_midi: e.target.value })} />

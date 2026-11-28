@@ -61,6 +61,7 @@ WORKDIR /app
 COPY --from=backend-build /app/server/package.json ./package.json
 COPY --from=backend-build /app/server/node_modules ./node_modules
 COPY server/src ./src
+COPY server/scripts/seed-referentiels.js ./scripts/seed-referentiels.js
 COPY scripts/bake-db.sh ./scripts/bake-db.sh
 RUN chmod +x ./scripts/bake-db.sh && sh ./scripts/bake-db.sh
 
