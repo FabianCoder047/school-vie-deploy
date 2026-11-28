@@ -29,7 +29,7 @@ esac
 
 shutdown_db() {
   if [ "$LOCAL_DB" = 1 ]; then
-    mysqladmin --protocol=socket -uroot shutdown >/dev/null 2>&1 || true
+    mysqladmin --socket="$SOCKET" --protocol=socket -uroot shutdown >/dev/null 2>&1 || true
   fi
 }
 
@@ -47,8 +47,10 @@ if [ "$LOCAL_DB" = 1 ]; then
   chown -R mysql:mysql /var/run/mysqld "$DATADIR" /data/mysqld.log
 
   if [ ! -d "$DATADIR/mysql" ]; then
-    log "Premier démarrage : initialisation de MySQL 8 dans $DATADIR"
-    mysqld --initialize-insecure --user=mysql --datadir="$DATADIR" >/dev/null 2>&1
+    log "Restauration du snapshot MySQL embarqué (schéma + référentiels)"
+    tar -xf /opt/db-initial.tar -C /data
+    chown -R mysql:mysql "$DATADIR"
+    touch /data/.seeded
   fi
 
   log "Démarrage de MySQL 8 (127.0.0.1:$DB_PORT)"
@@ -59,7 +61,7 @@ if [ "$LOCAL_DB" = 1 ]; then
     >/data/mysqld.log 2>&1 &
 
   i=0
-  until mysqladmin --protocol=socket -uroot ping --silent >/dev/null 2>&1; do
+  until mysqladmin --socket="$SOCKET" --protocol=socket -uroot ping --silent >/dev/null 2>&1; do
     i=$((i + 1))
     if [ "$i" -gt 60 ]; then
       log "MySQL n'a pas démarré :"; cat /data/mysqld.log || true
@@ -68,7 +70,7 @@ if [ "$LOCAL_DB" = 1 ]; then
     sleep 1
   done
 
-  mysql --protocol=socket -uroot <<SQL
+  mysql --socket="$SOCKET" --protocol=socket -uroot <<SQL
 CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASSWORD_SQL}';
 GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'127.0.0.1';
@@ -79,23 +81,11 @@ else
   log "Utilisation de la base MySQL externe $DB_HOST:$DB_PORT/$DB_NAME"
 fi
 
-# Mot de passe admin temporaire généré au premier démarrage s'il n'est pas fourni.
-if [ -z "${ADMIN_PASSWORD:-}" ] && [ ! -f /data/.seeded ]; then
-  ADMIN_PASSWORD=$(openssl rand -base64 18 | tr -d '/+=')
-  export ADMIN_PASSWORD
-  log "ADMIN_PASSWORD non défini : mot de passe généré = $ADMIN_PASSWORD"
-  log "Connectez-vous avec ${ADMIN_EMAIL:-admin@school-vie.local} puis changez-le."
-fi
-
-log "Application des migrations…"
-node src/database/migrate.js
-
-# Le seed réinitialise le mot de passe admin à chaque exécution : une seule fois.
-if [ ! -f /data/.seeded ] || [ "${FORCE_SEED:-false}" = true ]; then
-  log "Seed initial (compte admin, cycle, classes, année)…"
-  node src/database/seed.js
-  touch /data/.seeded
-fi
+# Ni migrations ni seed au réveil : le snapshot embarqué contient déjà le
+# schéma et les référentiels. On garantit seulement les comptes admin et on
+# lève les verrous de connexion (sans forcer de changement de mot de passe).
+log "Garantie des comptes administrateurs…"
+node scripts/ensure-admins.js
 
 log "Démarrage de l'API et de la SPA sur le port ${PORT}"
 node src/server.js &

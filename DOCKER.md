@@ -4,12 +4,21 @@ Même principe que `allo-togo-store` : **une seule image** contient l'API Expres
 la SPA React/Vite (PWA) et **MySQL 8**. Au démarrage, l'entrypoint enchaîne :
 
 ```
-MySQL 8 (local) → création base/utilisateur → migrations → seed admin (1 fois) → API + SPA
+snapshot MySQL embarqué → restauration de la base → comptes admin garantis → API + SPA
 ```
+
+Le schéma et les référentiels sont intégrés à l'image : **aucun seed n'est
+rejoué au réveil d'une instance**. Seuls les deux comptes admin sont garantis
+(« sans changement de mot de passe », verrous de connexion levés).
 
 Résultat : plus de service Render en échec à cause d'une base externe, plus de
 CORS à synchroniser, plus de static site séparé. Une seule URL sert tout :
 `/api/health`, `/api/*`, `/uploads/*` et l'interface.
+
+> ⚠️ Sur le plan **Free**, Render ne fournit aucun disque persistant : les
+> données créées après le déploiement (élèves, notes, uploads) sont perdues au
+> réveil, même si la base n'est pas re-seedée. Pour conserver ces données,
+> passer en Starter avec un disque monté sur `/data` (voir §3).
 
 ---
 

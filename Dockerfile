@@ -7,7 +7,7 @@
 #
 # Build local (ajouter --network=host si le réseau Docker est lent) :
 #   docker build --network=host -t school-vie .
-# Démarrage complet (base + migrations + seed + API) :
+# Démarrage complet (base restaurée + comptes admin + API) :
 #   docker compose up -d --build
 # =====================================================================
 
@@ -49,7 +49,22 @@ WORKDIR /app/server
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-# ---------- 4. Image finale ----------
+# ---------- 4. Snapshot MySQL (schéma + référentiels, sans comptes) ----------
+# Le snapshot est intégré à l'image : au réveil d'une instance Free, la base
+# est restaurée à l'identique, sans relancer les migrations ni le seed.
+FROM base AS db-bake
+ARG DB_NAME=school_vie_db_004774
+ARG DB_USER=schoolvie
+ARG DB_PASSWORD=SchoolVie2026!Db
+ENV DB_NAME=${DB_NAME} DB_USER=${DB_USER} DB_PASSWORD=${DB_PASSWORD}
+WORKDIR /app
+COPY --from=backend-build /app/server/package.json ./package.json
+COPY --from=backend-build /app/server/node_modules ./node_modules
+COPY server/src ./src
+COPY scripts/bake-db.sh ./scripts/bake-db.sh
+RUN chmod +x ./scripts/bake-db.sh && sh ./scripts/bake-db.sh
+
+# ---------- 5. Image finale ----------
 FROM base AS runtime
 ENV NODE_ENV=production \
     PORT=5000 \
@@ -67,6 +82,8 @@ COPY --from=backend-build /app/server/package.json ./package.json
 COPY --from=backend-build /app/server/node_modules ./node_modules
 COPY server/src ./src
 COPY --from=frontend-build /app/client/dist ./frontend-dist
+COPY --from=db-bake /opt/db-initial.tar /opt/db-initial.tar
+COPY server/scripts/ensure-admins.js ./scripts/ensure-admins.js
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

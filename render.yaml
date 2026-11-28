@@ -54,14 +54,24 @@ services:
       - key: LOGIN_LOCK_MINUTES
         value: "30"
 
-      # --- Admin initial : laissé vide -> mot de passe généré et affiché
-      #     dans les logs au premier démarrage (voir DOCKER.md).
+      # --- Comptes admin garantis à chaque démarrage (sans seed, sans
+      #     changement de mot de passe, verrous de connexion levés) ---
       - key: ADMIN_EMAIL
-        value: admin@school-vie.local
+        value: benjaminavoumado38@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN2_EMAIL
+        value: paulingoudo@gmail.com
+      - key: ADMIN2_PASSWORD
+        sync: false
       - key: ADMIN_NOM
         value: Administrateur
       - key: ADMIN_PRENOM
         value: École
+      - key: ADMIN2_NOM
+        value: Administrateur
+      - key: ADMIN2_PRENOM
+        value: Vie
       - key: SCHOOL_NAME
         value: School Vie
 
